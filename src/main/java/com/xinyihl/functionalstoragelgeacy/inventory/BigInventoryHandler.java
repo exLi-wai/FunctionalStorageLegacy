@@ -59,17 +59,20 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
             return ItemStack.EMPTY;
         if (isValid(slot, stack)) {
             BigStack bigStack = this.storedStacks.get(slot);
-            int inserted = Math.min(getSlotLimit(slot) - bigStack.getAmount(), stack.getCount());
+            int inserted = Math.max(0, Math.min(getSlotLimit(slot) - bigStack.getAmount(), stack.getCount()));
+            if (inserted <= 0 && !isVoid()) return stack;
             if (!simulate) {
                 if (bigStack.getStack().isEmpty()) {
                     ItemStack template = stack.copy();
                     template.setCount(stack.getMaxStackSize());
                     bigStack.setStack(template);
                 }
-                bigStack.setAmount(Math.min(bigStack.getAmount() + inserted, getSlotLimit(slot)));
+                if (inserted > 0) {
+                    bigStack.setAmount(Math.min(bigStack.getAmount() + inserted, getSlotLimit(slot)));
+                }
                 onChange();
             }
-            if (inserted == stack.getCount() || isVoid()) return ItemStack.EMPTY;
+            if (inserted >= stack.getCount() || isVoid()) return ItemStack.EMPTY;
             ItemStack remainder = stack.copy();
             remainder.setCount(stack.getCount() - inserted);
             return remainder;
@@ -223,10 +226,19 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
         private int amount;
 
         public BigStack(ItemStack stack, int amount) {
-            this.stack = stack.copy();
             this.amount = amount;
-            this.slotStack = stack.copy();
-            this.slotStack.setCount(amount);
+            if (!stack.isEmpty()) {
+                this.stack = stack.copy();
+                if (amount > 0) {
+                    this.slotStack = stack.copy();
+                    this.slotStack.setCount(amount);
+                } else {
+                    this.slotStack = ItemStack.EMPTY;
+                }
+            } else {
+                this.stack = ItemStack.EMPTY;
+                this.slotStack = ItemStack.EMPTY;
+            }
         }
 
         public ItemStack getStack() {
@@ -234,9 +246,18 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
         }
 
         public void setStack(ItemStack stack) {
-            this.stack = stack.copy();
-            this.slotStack = stack.copy();
-            this.slotStack.setCount(amount);
+            if (!stack.isEmpty()) {
+                this.stack = stack.copy();
+                if (this.amount > 0) {
+                    this.slotStack = this.stack.copy();
+                    this.slotStack.setCount(this.amount);
+                } else {
+                    this.slotStack = ItemStack.EMPTY;
+                }
+            } else {
+                this.stack = ItemStack.EMPTY;
+                this.slotStack = ItemStack.EMPTY;
+            }
         }
 
         public int getAmount() {
@@ -244,9 +265,12 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
         }
 
         public void setAmount(int amount) {
-            this.amount = amount;
-            if (!this.slotStack.isEmpty()) {
-                this.slotStack.setCount(Math.max(amount, 0));
+            this.amount = Math.max(amount, 0);
+            if (!this.stack.isEmpty() && this.amount > 0) {
+                this.slotStack = this.stack.copy();
+                this.slotStack.setCount(this.amount);
+            } else {
+                this.slotStack = ItemStack.EMPTY;
             }
         }
 

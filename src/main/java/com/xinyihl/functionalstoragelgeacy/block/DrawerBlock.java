@@ -1,9 +1,8 @@
 package com.xinyihl.functionalstoragelgeacy.block;
 
-import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
 import com.xinyihl.functionalstoragelgeacy.DrawerType;
+import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
 import com.xinyihl.functionalstoragelgeacy.block.tile.ControllableDrawerTile;
-import com.xinyihl.functionalstoragelgeacy.block.tile.DrawerTile;
 import com.xinyihl.functionalstoragelgeacy.block.tile.StorageControllerTile;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -22,13 +21,11 @@ import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Abstract base class for all drawer blocks.
@@ -163,12 +160,13 @@ public abstract class DrawerBlock extends Block {
     protected void copyFromStack(ItemStack stack, ControllableDrawerTile tile) {
         if (stack.hasTagCompound()) {
             NBTTagCompound tag = stack.getTagCompound();
-            if (tag.hasKey("Locked")) {
-                tile.setLocked(tag.getBoolean("Locked"));
-            }
             if (tag.hasKey("TileData")) {
                 tile.loadTileFromNBT(tag.getCompoundTag("TileData"));
             }
+            if (tag.hasKey("Locked")) {
+                tile.setLocked(tag.getBoolean("Locked"));
+            }
+            tile.sendUpdatePacket();
         }
     }
 

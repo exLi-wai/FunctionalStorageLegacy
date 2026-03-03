@@ -3,17 +3,26 @@ package com.xinyihl.functionalstoragelgeacy;
 import com.xinyihl.functionalstoragelgeacy.block.*;
 import com.xinyihl.functionalstoragelgeacy.block.tile.*;
 import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
-import com.xinyihl.functionalstoragelgeacy.item.*;
+import com.xinyihl.functionalstoragelgeacy.item.ConfigurationToolItem;
+import com.xinyihl.functionalstoragelgeacy.item.LinkingToolItem;
+import com.xinyihl.functionalstoragelgeacy.item.StorageUpgradeItem;
+import com.xinyihl.functionalstoragelgeacy.item.UpgradeItem;
 import com.xinyihl.functionalstoragelgeacy.network.NetworkHandler;
 import com.xinyihl.functionalstoragelgeacy.proxy.CommonProxy;
 import com.xinyihl.functionalstoragelgeacy.util.DrawerWoodType;
 import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -253,6 +262,32 @@ public class FunctionalStorageLgeacy {
             ItemBlock itemBlock = new ItemBlock(block);
             itemBlock.setRegistryName(block.getRegistryName());
             return itemBlock;
+        }
+
+        @SubscribeEvent
+        public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
+            EntityPlayer player = event.getEntityPlayer();
+            if (!player.isCreative()) return;
+
+            World world = event.getWorld();
+            BlockPos pos = event.getPos();
+            IBlockState state = world.getBlockState(pos);
+            Block block = state.getBlock();
+
+            if (!(block instanceof DrawerBlock)) return;
+
+            DrawerBlock drawerBlock = (DrawerBlock) block;
+            int slot = drawerBlock.getHitSlot(state, world, pos, player);
+
+            if (slot != -1) {
+                event.setCanceled(true);
+                if (!world.isRemote) {
+                    TileEntity te = world.getTileEntity(pos);
+                    if (te instanceof ControllableDrawerTile) {
+                        ((ControllableDrawerTile) te).onClicked(player, slot);
+                    }
+                }
+            }
         }
     }
 }

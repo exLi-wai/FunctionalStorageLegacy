@@ -69,7 +69,7 @@ public class EnderSavedData extends WorldSavedData {
                 }
             };
             handler.setFrequency(key);
-            handler.deserializeNBT(data);
+            handler.deserializeNBTFull(data);
             frequencyMap.put(key, handler);
         }
     }
@@ -79,7 +79,7 @@ public class EnderSavedData extends WorldSavedData {
         int i = 0;
         for (Map.Entry<String, EnderInventoryHandler> entry : frequencyMap.entrySet()) {
             nbt.setString("Freq_" + i, entry.getKey());
-            nbt.setTag("FreqData_" + i, entry.getValue().serializeNBT());
+            nbt.setTag("FreqData_" + i, entry.getValue().serializeNBTFull());
             i++;
         }
         nbt.setInteger("FrequencyCount", i);
