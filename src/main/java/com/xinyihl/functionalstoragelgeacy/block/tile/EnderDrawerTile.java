@@ -41,12 +41,13 @@ public class EnderDrawerTile extends ControllableDrawerTile {
         if (world != null && !world.isRemote) {
             removeTicks = Math.max(removeTicks - 1, 0);
 
-            // Sync locked state
             if (world.getTotalWorldTime() % 10 == 0 && storage instanceof EnderInventoryHandler) {
                 EnderInventoryHandler enderHandler = (EnderInventoryHandler) storage;
                 if (enderHandler.isLocked() != isLocked()) {
                     super.setLocked(enderHandler.isLocked());
                 }
+                // Send periodic updates to sync ender inventory contents to clients
+                sendUpdatePacket();
             }
         }
     }
@@ -69,12 +70,13 @@ public class EnderDrawerTile extends ControllableDrawerTile {
         }
 
         if (slot != -1 && !world.isRemote && storage != null) {
+            boolean changed = false;
             // Insert held item
             if (!heldStack.isEmpty()) {
                 ItemStack result = storage.insertItem(0, heldStack, true);
                 if (result.getCount() != heldStack.getCount()) {
                     player.setHeldItem(hand, storage.insertItem(0, heldStack, false));
-                    return true;
+                    changed = true;
                 }
             }
 
@@ -87,12 +89,17 @@ public class EnderDrawerTile extends ControllableDrawerTile {
                         if (testResult.getCount() != invStack.getCount()) {
                             ItemStack leftover = storage.insertItem(0, invStack.copy(), false);
                             player.inventory.setInventorySlotContents(i, leftover);
+                            changed = true;
                         }
                     }
                 }
             }
 
             INTERACTION_LOGGER.put(player.getUniqueID(), System.currentTimeMillis());
+            
+            if (changed) {
+                sendUpdatePacket();
+            }
         }
 
         return true;
@@ -106,6 +113,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
             ItemStack extracted = storage.extractItem(0, amount, false);
             if (!extracted.isEmpty()) {
                 ItemHandlerHelper.giveItemToPlayer(player, extracted);
+                sendUpdatePacket();
             }
         }
     }
@@ -139,6 +147,32 @@ public class EnderDrawerTile extends ControllableDrawerTile {
         compound = super.writeToNBT(compound);
         compound.setString("Frequency", frequency);
         return compound;
+    }
+
+    @Override
+    public NBTTagCompound getUpdateTag() {
+        NBTTagCompound tag = super.getUpdateTag();
+        if (storage instanceof EnderInventoryHandler) {
+            tag.setTag("EnderInventory", ((EnderInventoryHandler) storage).serializeNBT());
+        }
+        return tag;
+    }
+
+    @Override
+    public void onDataPacket(net.minecraft.network.NetworkManager net, net.minecraft.network.play.server.SPacketUpdateTileEntity pkt) {
+        super.onDataPacket(net, pkt);
+        NBTTagCompound nbt = pkt.getNbtCompound();
+        if (nbt.hasKey("EnderInventory")) {
+            if (this.storage == null) {
+                this.storage = new EnderInventoryHandler() {
+                    @Override
+                    public void onChange() {}
+                };
+            }
+            if (this.storage instanceof EnderInventoryHandler) {
+                ((EnderInventoryHandler) this.storage).deserializeNBT(nbt.getCompoundTag("EnderInventory"));
+            }
+        }
     }
 
     @Override

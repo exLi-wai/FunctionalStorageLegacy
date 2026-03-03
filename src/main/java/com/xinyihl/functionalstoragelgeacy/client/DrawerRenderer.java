@@ -45,6 +45,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y, z);
+
+        int ambLight = te.getWorld().getCombinedLight(te.getPos().offset(facing), 0);
+        int lu = ambLight % 65536;
+        int lv = ambLight / 65536;
+        net.minecraft.client.renderer.OpenGlHelper.setLightmapTextureCoords(net.minecraft.client.renderer.OpenGlHelper.lightmapTexUnit, (float)lu / 1.0F, (float)lv / 1.0F);
+
         setupFaceTransform(facing);
 
         if (te instanceof FluidDrawerTile) {
@@ -59,6 +65,56 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
             renderItemSlots(te, block.getDrawerType(), options);
         }
 
+        renderLockOnFace(te);
+
+        GlStateManager.enableLighting();
+        GlStateManager.enableLight(0);
+        GlStateManager.enableLight(1);
+        GlStateManager.enableColorMaterial();
+        GlStateManager.colorMaterial(1032, 5634);
+        GlStateManager.disableRescaleNormal();
+        GlStateManager.disableNormalize();
+        GlStateManager.disableBlend();
+
+        GlStateManager.popMatrix();
+    }
+
+    private static final net.minecraft.util.ResourceLocation LOCK_TEXTURE = new net.minecraft.util.ResourceLocation("functionalstoragelgeacy", "textures/blocks/lock.png");
+
+    private void renderLockOnFace(ControllableDrawerTile te) {
+        if (!te.isLocked()) return;
+
+        GlStateManager.pushMatrix();
+
+        float offsetX = 0.5f;
+        float offsetY = 15.5f / 16.0f;
+        float zOffset = 1.01f;
+
+        GlStateManager.translate(offsetX, offsetY, zOffset);
+        float size = 0.5f / 16.0f;
+        GlStateManager.scale(size, size, 1.0f);
+
+        Minecraft.getMinecraft().getTextureManager().bindTexture(LOCK_TEXTURE);
+
+        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        GlStateManager.disableLighting();
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+        buffer.begin(7, net.minecraft.client.renderer.vertex.DefaultVertexFormats.POSITION_TEX);
+
+        buffer.pos(-1, -1, 0).tex(0, 1).endVertex();
+        buffer.pos(1, -1, 0).tex(1, 1).endVertex();
+        buffer.pos(1, 1, 0).tex(1, 0).endVertex();
+        buffer.pos(-1, 1, 0).tex(0, 0).endVertex();
+
+        tessellator.draw();
+
+        GlStateManager.enableLighting();
+        GlStateManager.disableBlend();
+
         GlStateManager.popMatrix();
     }
 
@@ -72,26 +128,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
      * X+ goes right, Y+ goes up, Z+ goes outward from the block.
      */
     private void setupFaceTransform(EnumFacing facing) {
-        float offset = 0.5F / 16.0F; // slight outward offset to prevent z-fighting
+        GlStateManager.translate(0.5F, 0.5F, 0.5F);
+        float rotY = 0;
         switch (facing) {
-            case NORTH:
-                GlStateManager.translate(1, 0, 0);
-                GlStateManager.rotate(180, 0, 1, 0);
-                break;
-            case SOUTH:
-                GlStateManager.translate(0, 0, 1);
-                break;
-            case EAST:
-                GlStateManager.translate(1, 0, 1);
-                GlStateManager.rotate(90, 0, 1, 0);
-                break;
-            case WEST:
-                GlStateManager.rotate(-90, 0, 1, 0);
-                break;
-            default:
-                break;
+            case NORTH: rotY = 180; break;
+            case SOUTH: rotY = 0; break;
+            case WEST: rotY = 270; break;
+            case EAST: rotY = 90; break;
+            default: break;
         }
-        GlStateManager.translate(0, 0, offset);
+        GlStateManager.rotate(rotY, 0, 1, 0);
+        GlStateManager.translate(-0.5F, -0.5F, -0.5F);
     }
 
     // ============================================================
@@ -110,17 +157,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         switch (drawerType) {
             case X_1:
-                renderBigSlot(bigHandler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.015F);
+                renderBigSlot(bigHandler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.3F);
                 break;
             case X_2:
-                renderBigSlot(bigHandler, 0, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.02F);
-                renderBigSlot(bigHandler, 1, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.02F);
+                renderBigSlot(bigHandler, 0, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.2F);
+                renderBigSlot(bigHandler, 1, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.2F);
                 break;
             case X_4:
-                renderBigSlot(bigHandler, 0, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.02F);
-                renderBigSlot(bigHandler, 1, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.02F);
-                renderBigSlot(bigHandler, 2, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.02F);
-                renderBigSlot(bigHandler, 3, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.02F);
+                renderBigSlot(bigHandler, 0, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Right
+                renderBigSlot(bigHandler, 1, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Left
+                renderBigSlot(bigHandler, 2, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Right
+                renderBigSlot(bigHandler, 3, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Left
                 break;
         }
     }
@@ -185,7 +232,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
             renderStackOnFace(stack, posX, posY, 0.5F);
         }
         if (showCount) {
-            renderCountOnFace(count, posX, posY, 0.5F, 0.02F);
+            renderCountOnFace(count, posX, posY, 0.5F, 0.2F);
         }
     }
 
@@ -208,7 +255,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
             renderStackOnFace(stack, 0.5F, 0.5F, 1.0F);
         }
         if (showCount) {
-            renderCountOnFace(count, 0.5F, 0.5F, 1.0F, 0.015F);
+            renderCountOnFace(count, 0.5F, 0.5F, 1.0F, 0.3F);
         }
     }
 
@@ -226,17 +273,17 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         switch (drawerType) {
             case X_1:
-                renderSingleFluidSlot(handler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.015F);
+                renderSingleFluidSlot(handler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.3F);
                 break;
             case X_2:
-                renderSingleFluidSlot(handler, 0, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.02F);
-                renderSingleFluidSlot(handler, 1, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.02F);
+                renderSingleFluidSlot(handler, 0, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.2F);
+                renderSingleFluidSlot(handler, 1, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.2F);
                 break;
             case X_4:
-                renderSingleFluidSlot(handler, 0, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.02F);
-                renderSingleFluidSlot(handler, 1, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.02F);
-                renderSingleFluidSlot(handler, 2, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.02F);
-                renderSingleFluidSlot(handler, 3, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.02F);
+                renderSingleFluidSlot(handler, 0, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Right
+                renderSingleFluidSlot(handler, 1, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Left
+                renderSingleFluidSlot(handler, 2, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Right
+                renderSingleFluidSlot(handler, 3, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Left
                 break;
         }
     }
@@ -269,31 +316,54 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
      * @param slotScale sub-scale for multi-slot drawers (1.0 for X_1, 0.5 for X_2/X_4)
      */
     private void renderStackOnFace(ItemStack stack, float posX, float posY, float slotScale) {
-        RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
-        IBakedModel model = renderItem.getItemModelWithOverrides(stack, null, null);
+        if (stack.isEmpty()) return;
+
+        float cX = posX * 16.0f;
+        float cY = posY * 16.0f;
+        float size = (slotScale >= 1.0f) ? 0.5f : 0.25f;
+
+        float offsetX = cX - 8.0f * size;
+        float offsetY = 16.0f - cY - 8.0f * size;
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(posX, posY, 0.001F);
 
-        if (slotScale != 1.0F) {
-            GlStateManager.scale(slotScale, slotScale, 1.0F);
-        }
+        GlStateManager.translate(0, 1, 1.005f);
+        GlStateManager.scale(1 / 16f, -1 / 16f, 0.00001f);
+        GlStateManager.translate(offsetX, offsetY, 0);
+        GlStateManager.scale(size, size, 1);
 
-        // Scale down: blocks (gui3d) larger, flat items smaller; Z very thin
-        if (model.isGui3d()) {
-            GlStateManager.scale(0.75F, 0.75F, 0.002F);
+        GlStateManager.pushMatrix();
+        if (size >= 0.5f) {
+            GlStateManager.scale(2.6f, 2.6f, 1);
+            GlStateManager.rotate(171.6f, 0.0F, 1.0F, 0.0F);
+            GlStateManager.rotate(84.9f, 1.0F, 0.0F, 0.0F);
         } else {
-            GlStateManager.scale(0.4F, 0.4F, 0.002F);
+            GlStateManager.scale(1.92f, 1.92f, 1);
+            GlStateManager.rotate(169.2f, 0.0F, 1.0F, 0.0F);
+            GlStateManager.rotate(79.0f, 1.0F, 0.0F, 0.0F);
         }
+        RenderHelper.enableStandardItemLighting();
+        GlStateManager.popMatrix();
 
-        // Rotate 180° around Y so front of item faces outward from the block
-        GlStateManager.rotate(180, 0, 1, 0);
+        GlStateManager.enableCull();
+        GlStateManager.disableRescaleNormal();
+        GlStateManager.enablePolygonOffset();
+        GlStateManager.doPolygonOffset(-1, -1);
 
         GlStateManager.enableRescaleNormal();
-        RenderHelper.enableStandardItemLighting();
-        renderItem.renderItem(stack, model);
-        RenderHelper.disableStandardItemLighting();
         GlStateManager.disableRescaleNormal();
+        GlStateManager.pushAttrib();
+        GlStateManager.enableRescaleNormal();
+        GlStateManager.popAttrib();
+
+        RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
+        try {
+            renderItem.renderItemIntoGUI(stack, 0, 0);
+        } catch (Exception ignored) {}
+
+        GlStateManager.disableBlend();
+        GlStateManager.enableAlpha();
+        GlStateManager.disablePolygonOffset();
 
         GlStateManager.popMatrix();
     }
@@ -310,7 +380,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         if (sprite == null) return;
 
         GlStateManager.pushMatrix();
-        GlStateManager.translate(posX, posY, 0.001F);
+        GlStateManager.translate(posX, posY, 1.001F);
 
         if (slotScale != 1.0F) {
             GlStateManager.scale(slotScale, slotScale, 1.0F);
@@ -357,36 +427,39 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
      * @param maxScale  maximum text scale
      */
     private void renderCountOnFace(long count, float posX, float posY, float slotScale, float maxScale) {
+        if (count <= 0) return;
         String text = NumberUtils.getFormattedBigNumber(count);
         FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
 
+        float cX = posX * 16.0f;
+        float cY = posY * 16.0f;
+        float size = (slotScale >= 1.0f) ? 0.5f : 0.25f;
+
+        float offsetX = cX;
+        float offsetY = 16.0f - cY + 4.0f * size; // shift down
+
         GlStateManager.pushMatrix();
-        GlStateManager.translate(posX, posY, 0.002F);
 
-        if (slotScale != 1.0F) {
-            GlStateManager.scale(slotScale, slotScale, 1.0F);
-        }
-
-        // Position text below the item icon
-        GlStateManager.translate(0, -0.35F, 0.005F);
-
-        // Calculate text scale so text fits within the slot
-        int requiredWidth = Math.max(fontRenderer.getStringWidth(text), 1);
-        float scaleX = 1.0F / requiredWidth;
-        float scale = scaleX * 0.4F;
-        if (maxScale > 0) {
-            scale = Math.min(scale, maxScale);
-        }
-
-        // Negative Y scale flips text right-side-up (font Y goes down, face Y goes up)
-        GlStateManager.scale(scale, -scale, scale);
-        GlStateManager.disableLighting();
-        GlStateManager.depthMask(false);
+        float zOffset = 1.006f; // slightly in front of items
+        GlStateManager.translate(0, 1, zOffset);
+        GlStateManager.scale(1 / 16f, -1 / 16f, 0.00001f);
+        GlStateManager.translate(offsetX, offsetY, 0);
 
         int textWidth = fontRenderer.getStringWidth(text);
-        fontRenderer.drawString(text, -textWidth / 2, -4, 0xFFFFFFFF);
+        float scaleX = (16.0f * size) / (float) Math.max(textWidth, 1);
+        float actualScale = Math.min(scaleX * 0.8f, maxScale);
+
+        GlStateManager.scale(actualScale, actualScale, 1.0f);
+
+        GlStateManager.disableLighting();
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        GlStateManager.depthMask(false);
+
+        fontRenderer.drawString(text, -textWidth / 2, 4, 0xFFFFFFFF, true);
 
         GlStateManager.depthMask(true);
+        GlStateManager.disableBlend();
         GlStateManager.enableLighting();
         GlStateManager.popMatrix();
     }
