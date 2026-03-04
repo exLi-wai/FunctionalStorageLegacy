@@ -117,7 +117,10 @@ public abstract class DrawerBlock extends Block {
 
     @Override
     public void getDrops(NonNullList<ItemStack> drops, IBlockAccess world, BlockPos pos, IBlockState state, int fortune) {
-        // Don't add default drops - handled by harvestBlock/removedByPlayer
+        TileEntity te = world.getTileEntity(pos);
+        if (te instanceof ControllableDrawerTile) {
+            drops.add(createStackWithTileData((ControllableDrawerTile) te));
+        }
     }
 
     @Override
@@ -130,11 +133,6 @@ public abstract class DrawerBlock extends Block {
     public void harvestBlock(World worldIn, EntityPlayer player, BlockPos pos, IBlockState state, @Nullable TileEntity te, ItemStack stack) {
         super.harvestBlock(worldIn, player, pos, state, te, stack);
         worldIn.setBlockToAir(pos);
-    }
-
-    @Override
-    public void dropBlockAsItemWithChance(World worldIn, BlockPos pos, IBlockState state, float chance, int fortune) {
-        // Override to save tile data to the dropped item
     }
 
     /**
@@ -175,18 +173,12 @@ public abstract class DrawerBlock extends Block {
         TileEntity te = worldIn.getTileEntity(pos);
         if (te instanceof ControllableDrawerTile) {
             ControllableDrawerTile drawerTile = (ControllableDrawerTile) te;
-
-            // Notify controller of removal
             if (drawerTile.getControllerPos() != null) {
                 TileEntity controllerTE = worldIn.getTileEntity(drawerTile.getControllerPos());
                 if (controllerTE instanceof StorageControllerTile) {
                     ((StorageControllerTile) controllerTE).removeConnectedDrawer(pos);
                 }
             }
-
-            // Drop the drawer with its contents saved
-            ItemStack drop = createStackWithTileData(drawerTile);
-            spawnAsEntity(worldIn, pos, drop);
         }
         super.breakBlock(worldIn, pos, state);
     }

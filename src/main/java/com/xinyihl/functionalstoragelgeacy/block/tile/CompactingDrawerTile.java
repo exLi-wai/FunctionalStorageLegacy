@@ -183,6 +183,10 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         return 3;
     }
 
+    public CompactingInventoryHandler getCompactingHandler() {
+        return handler;
+    }
+
     @Override
     protected void writeCustomData(NBTTagCompound nbt) {
         nbt.setTag("CompactingInv", handler.serializeNBT());

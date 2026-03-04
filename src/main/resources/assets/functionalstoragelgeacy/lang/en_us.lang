@@ -103,6 +103,11 @@ configurationtool.use=Right-click a drawer to apply. Sneak+right-click air to cy
 
 # GUI
 gui.functionalstorage.open_gui=Open GUI
+gui.functionalstoragelgeacy.item=Item: 
+gui.functionalstoragelgeacy.fluid=Fluid: 
+gui.functionalstoragelgeacy.amount=Amount: 
+gui.functionalstoragelgeacy.slot=Slot: 
+gui.functionalstoragelgeacy.empty=Empty
 
 # Drawer Item Tooltip
 drawer.tooltip.stored=Stored:

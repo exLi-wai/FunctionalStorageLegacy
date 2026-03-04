@@ -75,15 +75,6 @@ public class ArmoryCabinetBlock extends Block {
     }
 
     @Override
-    public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn,
-                                    EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
-        if (!worldIn.isRemote) {
-            playerIn.openGui(FunctionalStorageLgeacy.INSTANCE, 1, worldIn, pos.getX(), pos.getY(), pos.getZ());
-        }
-        return true;
-    }
-
-    @Override
     public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
         super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
         if (stack.hasTagCompound() && stack.getTagCompound().hasKey("TileData")) {
