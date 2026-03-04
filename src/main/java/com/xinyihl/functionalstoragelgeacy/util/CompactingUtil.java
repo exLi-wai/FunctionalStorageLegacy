@@ -61,19 +61,23 @@ public class CompactingUtil {
                 }
             }
 
-            // Build results from input (highest) down
-            int needed = 1;
-            results.add(new CompactingInventoryHandler.Result(current, needed));
+            // Build results from input (highest) down to lowest tier
+            // needed = how many base (lowest tier) items equal one of this item
+            // e.g., [Block(81), Ingot(9), Nugget(1)]
+            int totalProduct = 1;
             for (LowerTier lt : lowerTiers) {
-                needed *= lt.count;
-                results.add(new CompactingInventoryHandler.Result(lt.result, needed));
+                totalProduct *= lt.count;
+            }
+            results.add(new CompactingInventoryHandler.Result(current, totalProduct));
+            int divisor = 1;
+            for (LowerTier lt : lowerTiers) {
+                divisor *= lt.count;
+                results.add(new CompactingInventoryHandler.Result(lt.result, totalProduct / divisor));
             }
         } else {
             // Build results from highest tier down to input
-            int topNeeded = 1;
-            // Add tiers from highest to lowest
-            // higherTiers are in order: input->higher1->higher2
-            // We want: [highest, ..., input]
+            // chain is [input, higher1, higher2], counts[i] = how many chain[i] to make chain[i+1]
+            // needed: chain[0]=1, chain[1]=counts[0], chain[2]=counts[0]*counts[1], ...
             List<ItemStack> chain = new ArrayList<>();
             List<Integer> counts = new ArrayList<>();
             chain.add(current);
@@ -82,20 +86,28 @@ public class CompactingUtil {
                 chain.add(ht.result);
             }
 
-            // Reverse: chain is [input, higher1, higher2] -> we want [higher2, higher1, input]
-            // counts is [count_to_get_higher1, count_to_get_higher2]
-            int cumulativeNeeded = 1;
-            results.add(new CompactingInventoryHandler.Result(chain.get(chain.size() - 1), 1));
-            for (int i = chain.size() - 2; i >= 0; i--) {
-                cumulativeNeeded *= counts.get(i);
-                results.add(new CompactingInventoryHandler.Result(chain.get(i), cumulativeNeeded));
+            // Calculate needed from bottom (input) up
+            int[] neededArr = new int[chain.size()];
+            neededArr[0] = 1;
+            for (int i = 1; i < chain.size(); i++) {
+                neededArr[i] = neededArr[i - 1] * counts.get(i - 1);
+            }
+
+            // Add results from highest to lowest: [highest(biggest needed), ..., input(1)]
+            for (int i = chain.size() - 1; i >= 0; i--) {
+                results.add(new CompactingInventoryHandler.Result(chain.get(i), neededArr[i]));
             }
 
             // Try to extend downward from input
             if (results.size() < maxSlots) {
                 LowerTier lower = findLowerTier(world, current);
                 if (lower != null) {
-                    results.add(new CompactingInventoryHandler.Result(lower.result, cumulativeNeeded * lower.count));
+                    // Rescale all existing needed values by lower.count
+                    // then add lower tier with needed=1
+                    for (CompactingInventoryHandler.Result r : results) {
+                        r.setNeeded(r.getNeeded() * lower.count);
+                    }
+                    results.add(new CompactingInventoryHandler.Result(lower.result, 1));
                 }
             }
         }

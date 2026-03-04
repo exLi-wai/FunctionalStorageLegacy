@@ -109,13 +109,12 @@ public class FluidDrawerInfoGuiAddon {
                 renderFluid(mc, guiX, guiY, fluidStack, i, slotAmount);
             }
         }
+        // Draw front texture as the panel overlay on top of fluids (16x16 block texture scaled to 48x48)
         int size = 48;
-        Gui.drawModalRectWithCustomSizedTexture(guiX + posX, guiY + posY, 0, 0, size, size, size, size);
-        // Draw front texture as the panel overlay on top of fluids
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(gui);
         GlStateManager.enableBlend();
-        Gui.drawModalRectWithCustomSizedTexture(guiX + posX, guiY + posY, 0, 0, size, size, size, size);
+        Gui.drawScaledCustomSizeModalRect(guiX + posX, guiY + posY, 0, 0, 16, 16, size, size, 16, 16);
         GlStateManager.disableBlend();
 
         // Draw amount text

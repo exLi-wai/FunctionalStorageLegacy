@@ -161,11 +161,11 @@ public class GuiDrawer extends GuiContainer {
         if (slotCount == 2) {
             return DrawerType.X_2.getSlotPosition();
         }
-        // 3 slots: vertical layout
+        // 3 slots: matches block face layout (top-center + bottom-left + bottom-right)
         return i -> {
-            if (i == 0) return Pair.of(16, 2);
-            if (i == 1) return Pair.of(16, 16);
-            return Pair.of(16, 30);
+            if (i == 0) return Pair.of(28, 28);  // bottom-right (highest tier)
+            if (i == 1) return Pair.of(4, 28);   // bottom-left (mid tier)
+            return Pair.of(16, 4);                // top-center (lowest tier)
         };
     }
 

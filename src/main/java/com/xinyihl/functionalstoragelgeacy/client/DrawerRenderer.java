@@ -33,6 +33,13 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
     private static final ResourceLocation LOCK_TEXTURE = new ResourceLocation("functionalstoragelgeacy", "textures/blocks/lock.png");
 
+    private static final float Z_OFFSET_STACK = 0.97F;
+    private static final float Z_OFFSET_COUNT = 0.971F;
+    private static final float Z_OFFSET_FLUID = 0.96F;
+    private static final float Z_OFFSET_INDICATOR = 1.002F;
+    private static final float Z_OFFSET_UPGRADE = 1.005F;
+    private static final float Z_OFFSET_LOCK = 1.01F;
+
     // ============================================================
     // Standard drawers
     // ============================================================
@@ -78,9 +85,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         }
 
         // Render upgrade icons on the face
-        renderUpgradesOnFace(te, options);
+        renderUpgradesOnFace(te, options, Z_OFFSET_UPGRADE);
 
-        renderLockOnFace(te);
+        renderLockOnFace(te, Z_OFFSET_LOCK);
 
         GlStateManager.enableLighting();
         GlStateManager.enableLight(0);
@@ -132,12 +139,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         long count = bigStack.getAmount();
         int maxAmount = handler.getSlotLimit(slot);
         float progress = maxAmount > 0 ? Math.min(1.0f, count / (float) maxAmount) : 0;
-        renderIndicatorOnFace(posX, posY, slotScale, progress, options);
+        renderIndicatorOnFace(posX, posY, slotScale, progress, options, Z_OFFSET_INDICATOR);
         if (showRender) {
-            renderStackOnFace(stack, posX, posY, slotScale);
+            renderStackOnFace(stack, posX, posY, slotScale, Z_OFFSET_STACK);
         }
         if (showCount) {
-            renderCountOnFace(count, posX, posY, slotScale, textScale);
+            renderCountOnFace(count, posX, posY, slotScale, textScale, Z_OFFSET_COUNT);
         }
     }
 
@@ -177,12 +184,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         int count = handler.getStackInSlot(slot).getCount();
         int maxAmount = handler.getSlotLimit(slot);
         float progress = maxAmount > 0 ? Math.min(1.0f, count / (float) maxAmount) : 0;
-        renderIndicatorOnFace(posX, posY, 0.5F, progress, options);
+        renderIndicatorOnFace(posX, posY, 0.5F, progress, options, Z_OFFSET_INDICATOR);
         if (showRender) {
-            renderStackOnFace(stack, posX, posY, 0.5F);
+            renderStackOnFace(stack, posX, posY, 0.5F, 1.001F);
         }
         if (showCount) {
-            renderCountOnFace(count, posX, posY, 0.5F, 0.2F);
+            renderCountOnFace(count, posX, posY, 0.5F, 0.2F, 1.001F);
         }
     }
 
@@ -202,10 +209,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         int count = stack.getCount();
         if (showRender) {
-            renderStackOnFace(stack, 0.5F, 0.5F, 1.0F);
+            renderStackOnFace(stack, 0.5F, 0.5F, 1.0F, Z_OFFSET_STACK);
         }
         if (showCount) {
-            renderCountOnFace(count, 0.5F, 0.5F, 1.0F, 0.3F);
+            renderCountOnFace(count, 0.5F, 0.5F, 1.0F, 0.3F, Z_OFFSET_COUNT);
         }
     }
 
@@ -243,12 +250,12 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         int maxAmount = handler.getCapacityPerTank();
         float progress = maxAmount > 0 ? Math.min(1.0f, fluid.amount / (float) maxAmount) : 0;
-        renderIndicatorOnFace(posX, posY, slotScale, progress, options);
+        renderIndicatorOnFace(posX, posY, slotScale, progress, options, Z_OFFSET_INDICATOR);
         if (showRender) {
-            renderFluidOnFace(fluid, posX, posY, slotScale);
+            renderFluidOnFace(fluid, posX, posY, slotScale, Z_OFFSET_FLUID);
         }
         if (showCount) {
-            renderCountOnFace(fluid.amount, posX, posY, slotScale, textScale);
+            renderCountOnFace(fluid.amount, posX, posY, slotScale, textScale, Z_OFFSET_COUNT);
         }
     }
 
@@ -281,7 +288,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Core rendering: item stack on face
     // ============================================================
-    private void renderStackOnFace(ItemStack stack, float posX, float posY, float slotScale) {
+    private void renderStackOnFace(ItemStack stack, float posX, float posY, float slotScale, float zOffset) {
         if (stack.isEmpty()) return;
 
         float cX = posX * 16.0f;
@@ -290,10 +297,9 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         float offsetX = cX - 8.0f * size;
         float offsetY = 16.0f - cY - 8.0f * size;
-
         GlStateManager.pushMatrix();
 
-        GlStateManager.translate(0, 1, 0.97f);
+        GlStateManager.translate(0, 1, zOffset);
         GlStateManager.scale(1 / 16f, -1 / 16f, 0.00001f);
         GlStateManager.translate(offsetX, offsetY, 0);
         GlStateManager.scale(size, size, 1);
@@ -337,15 +343,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Core rendering: fluid icon on face
     // ============================================================
-    private void renderFluidOnFace(FluidStack fluid, float posX, float posY, float slotScale) {
+    private void renderFluidOnFace(FluidStack fluid, float posX, float posY, float slotScale, float zOffset) {
         if (fluid == null || fluid.getFluid() == null) return;
 
         TextureAtlasSprite sprite = Minecraft.getMinecraft().getTextureMapBlocks()
                 .getAtlasSprite(fluid.getFluid().getStill(fluid).toString());
         if (sprite == null) return;
-
         GlStateManager.pushMatrix();
-        GlStateManager.translate(posX, posY, 0.96F);
+        GlStateManager.translate(posX, posY, zOffset);
 
         if (slotScale != 1.0F) {
             GlStateManager.scale(slotScale, slotScale, 1.0F);
@@ -381,15 +386,13 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Core rendering: lock icon on face
     // ============================================================
-    private void renderLockOnFace(ControllableDrawerTile te) {
+    private void renderLockOnFace(ControllableDrawerTile te, float zOffset) {
         if (!te.isLocked()) return;
 
         GlStateManager.pushMatrix();
 
         float offsetX = 0.5f;
         float offsetY = 15.5f / 16.0f;
-        float zOffset = 1.01f;
-
         GlStateManager.translate(offsetX, offsetY, zOffset);
         float size = 0.5f / 16.0f;
         GlStateManager.scale(size, size, 1.0f);
@@ -421,7 +424,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Core rendering: count text on face
     // ============================================================
-    private void renderCountOnFace(long count, float posX, float posY, float slotScale, float maxScale) {
+    private void renderCountOnFace(long count, float posX, float posY, float slotScale, float maxScale, float zOffset) {
         if (count <= 0) return;
         String text = NumberUtils.getFormattedBigNumber(count);
         FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
@@ -435,7 +438,6 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         GlStateManager.pushMatrix();
 
-        float zOffset = 0.971f; // slightly in front of items
         GlStateManager.translate(0, 1, zOffset);
         GlStateManager.scale(1 / 16f, -1 / 16f, 0.00001f);
         GlStateManager.translate(offsetX, offsetY, 0);
@@ -462,7 +464,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Core rendering: indicator on face
     // ============================================================
-    private void renderIndicatorOnFace(float posX, float posY, float slotScale, float progress, ControllableDrawerTile.DrawerOptions options) {
+    private void renderIndicatorOnFace(float posX, float posY, float slotScale, float progress, ControllableDrawerTile.DrawerOptions options, float zOffset) {
         if (options == null) return;
         int indicatorValue = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR);
         if (indicatorValue == 0) return;
@@ -480,7 +482,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         float x2 = cX + barWidth / 2f;
         float y1 = cY - yOffset - barHeight;
         float y2 = cY - yOffset;
-        float z = 1.002f;
+        float z = zOffset;
 
         Minecraft.getMinecraft().getTextureManager().bindTexture(INDICATOR_TEXTURE);
         GlStateManager.color(1, 1, 1, 1);
@@ -521,11 +523,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Core rendering: upgrade icons on face
     // ============================================================
-    private void renderUpgradesOnFace(ControllableDrawerTile te, ControllableDrawerTile.DrawerOptions options) {
+    private void renderUpgradesOnFace(ControllableDrawerTile te, ControllableDrawerTile.DrawerOptions options, float zOffset) {
         if (options == null || !options.isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_UPGRADES)) return;
 
         float iconScale = 0.01f;
-        float zOffset = 1.005f;
 
         GlStateManager.pushMatrix();
 

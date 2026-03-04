@@ -52,11 +52,11 @@ public class DrawerInfoGuiAddon {
         Minecraft mc = Minecraft.getMinecraft();
         int size = 48; // 16 * 2 + 16
         // Draw background.png as the base background
-        // Draw front texture as the panel overlay
+        // Draw front texture as the panel overlay (16x16 block texture scaled to 48x48)
         GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         mc.getTextureManager().bindTexture(gui);
         GlStateManager.enableBlend();
-        Gui.drawModalRectWithCustomSizedTexture(guiX + posX, guiY + posY, 0, 0, size, size, size, size);
+        Gui.drawScaledCustomSizeModalRect(guiX + posX, guiY + posY, 0, 0, 16, 16, size, size, 16, 16);
         GlStateManager.disableBlend();
 
         for (int i = 0; i < slotAmount; i++) {
