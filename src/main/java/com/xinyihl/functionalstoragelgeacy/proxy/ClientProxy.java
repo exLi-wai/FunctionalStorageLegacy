@@ -3,6 +3,8 @@ package com.xinyihl.functionalstoragelgeacy.proxy;
 import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
 import com.xinyihl.functionalstoragelgeacy.Tags;
 import com.xinyihl.functionalstoragelgeacy.block.WoodDrawerBlock;
+import com.xinyihl.functionalstoragelgeacy.block.tile.*;
+import com.xinyihl.functionalstoragelgeacy.client.ControllerRenderer;
 import com.xinyihl.functionalstoragelgeacy.client.DrawerRenderer;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
@@ -10,11 +12,6 @@ import net.minecraft.item.Item;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import com.xinyihl.functionalstoragelgeacy.block.tile.DrawerTile;
-import com.xinyihl.functionalstoragelgeacy.block.tile.CompactingDrawerTile;
-import com.xinyihl.functionalstoragelgeacy.block.tile.SimpleCompactingDrawerTile;
-import com.xinyihl.functionalstoragelgeacy.block.tile.FluidDrawerTile;
-import com.xinyihl.functionalstoragelgeacy.block.tile.EnderDrawerTile;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -33,6 +30,7 @@ public class ClientProxy extends CommonProxy {
         ClientRegistry.bindTileEntitySpecialRenderer(SimpleCompactingDrawerTile.class, new DrawerRenderer());
         ClientRegistry.bindTileEntitySpecialRenderer(FluidDrawerTile.class, new DrawerRenderer());
         ClientRegistry.bindTileEntitySpecialRenderer(EnderDrawerTile.class, new DrawerRenderer());
+        ClientRegistry.bindTileEntitySpecialRenderer(StorageControllerTile.class, new ControllerRenderer());
     }
 
     @Mod.EventBusSubscriber(value = Side.CLIENT, modid = Tags.MOD_ID)

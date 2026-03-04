@@ -1,17 +1,18 @@
 package com.xinyihl.functionalstoragelgeacy.client;
 
 import com.xinyihl.functionalstoragelgeacy.DrawerType;
+import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
 import com.xinyihl.functionalstoragelgeacy.block.DrawerBlock;
 import com.xinyihl.functionalstoragelgeacy.block.tile.*;
 import com.xinyihl.functionalstoragelgeacy.fluid.BigFluidHandler;
 import com.xinyihl.functionalstoragelgeacy.inventory.BigInventoryHandler;
 import com.xinyihl.functionalstoragelgeacy.inventory.CompactingInventoryHandler;
+import com.xinyihl.functionalstoragelgeacy.item.ConfigurationToolItem;
 import com.xinyihl.functionalstoragelgeacy.util.NumberUtils;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.*;
-import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
@@ -28,53 +29,7 @@ import net.minecraftforge.items.IItemHandler;
  */
 public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawerTile> {
 
-    @Override
-    public void render(ControllableDrawerTile te, double x, double y, double z,
-                       float partialTicks, int destroyStage, float alpha) {
-        if (te == null || te.getWorld() == null) return;
-
-        IBlockState state = te.getWorld().getBlockState(te.getPos());
-        if (!(state.getBlock() instanceof DrawerBlock)) return;
-
-        DrawerBlock block = (DrawerBlock) state.getBlock();
-        EnumFacing facing = state.getValue(DrawerBlock.FACING);
-        ControllableDrawerTile.DrawerOptions options = te.getDrawerOptions();
-
-        GlStateManager.pushMatrix();
-        GlStateManager.translate(x, y, z);
-
-        int ambLight = te.getWorld().getCombinedLight(te.getPos().offset(facing), 0);
-        int lu = ambLight % 65536;
-        int lv = ambLight / 65536;
-        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, (float)lu / 1.0F, (float)lv / 1.0F);
-
-        setupFaceTransform(facing);
-
-        if (te instanceof FluidDrawerTile) {
-            renderFluidSlots((FluidDrawerTile) te, block.getDrawerType(), options);
-        } else if (te instanceof SimpleCompactingDrawerTile) {
-            renderSimpleCompactingSlots((SimpleCompactingDrawerTile) te, options);
-        } else if (te instanceof CompactingDrawerTile) {
-            renderCompactingSlots((CompactingDrawerTile) te, options);
-        } else if (te instanceof EnderDrawerTile) {
-            renderEnderSlot((EnderDrawerTile) te, options);
-        } else {
-            renderItemSlots(te, block.getDrawerType(), options);
-        }
-
-        renderLockOnFace(te);
-
-        GlStateManager.enableLighting();
-        GlStateManager.enableLight(0);
-        GlStateManager.enableLight(1);
-        GlStateManager.enableColorMaterial();
-        GlStateManager.colorMaterial(1032, 5634);
-        GlStateManager.disableRescaleNormal();
-        GlStateManager.disableNormalize();
-        GlStateManager.disableBlend();
-
-        GlStateManager.popMatrix();
-    }
+    private static final ResourceLocation INDICATOR_TEXTURE = new ResourceLocation("functionalstoragelgeacy", "textures/blocks/indicator.png");
 
     private static final ResourceLocation LOCK_TEXTURE = new ResourceLocation("functionalstoragelgeacy", "textures/blocks/lock.png");
 
@@ -142,6 +97,57 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // Standard item drawers (X_1 / X_2 / X_4)
     // ============================================================
 
+    @Override
+    public void render(ControllableDrawerTile te, double x, double y, double z,
+                       float partialTicks, int destroyStage, float alpha) {
+        if (te == null || te.getWorld() == null) return;
+
+        IBlockState state = te.getWorld().getBlockState(te.getPos());
+        if (!(state.getBlock() instanceof DrawerBlock)) return;
+
+        DrawerBlock block = (DrawerBlock) state.getBlock();
+        EnumFacing facing = state.getValue(DrawerBlock.FACING);
+        ControllableDrawerTile.DrawerOptions options = te.getDrawerOptions();
+
+        GlStateManager.pushMatrix();
+        GlStateManager.translate(x, y, z);
+
+        int ambLight = te.getWorld().getCombinedLight(te.getPos().offset(facing), 0);
+        int lu = ambLight % 65536;
+        int lv = ambLight / 65536;
+        OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, (float) lu, (float) lv);
+
+        setupFaceTransform(facing);
+
+        if (te instanceof FluidDrawerTile) {
+            renderFluidSlots((FluidDrawerTile) te, block.getDrawerType(), options);
+        } else if (te instanceof SimpleCompactingDrawerTile) {
+            renderSimpleCompactingSlots((SimpleCompactingDrawerTile) te, options);
+        } else if (te instanceof CompactingDrawerTile) {
+            renderCompactingSlots((CompactingDrawerTile) te, options);
+        } else if (te instanceof EnderDrawerTile) {
+            renderEnderSlot((EnderDrawerTile) te, options);
+        } else {
+            renderItemSlots(te, block.getDrawerType(), options);
+        }
+
+        // Render upgrade icons on the face
+        renderUpgrades(te, options);
+
+        renderLockOnFace(te);
+
+        GlStateManager.enableLighting();
+        GlStateManager.enableLight(0);
+        GlStateManager.enableLight(1);
+        GlStateManager.enableColorMaterial();
+        GlStateManager.colorMaterial(1032, 5634);
+        GlStateManager.disableRescaleNormal();
+        GlStateManager.disableNormalize();
+        GlStateManager.disableBlend();
+
+        GlStateManager.popMatrix();
+    }
+
     private void renderItemSlots(ControllableDrawerTile te, DrawerType drawerType,
                                  ControllableDrawerTile.DrawerOptions options) {
         if (drawerType == null) return;
@@ -154,29 +160,37 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         switch (drawerType) {
             case X_1:
-                renderBigSlot(bigHandler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.3F);
+                renderBigSlot(bigHandler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.3F, options);
                 break;
             case X_2:
-                renderBigSlot(bigHandler, 0, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.2F);
-                renderBigSlot(bigHandler, 1, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.2F);
+                renderBigSlot(bigHandler, 0, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.2F, options);
+                renderBigSlot(bigHandler, 1, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.2F, options);
                 break;
             case X_4:
-                renderBigSlot(bigHandler, 0, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Right
-                renderBigSlot(bigHandler, 1, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Left
-                renderBigSlot(bigHandler, 2, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Right
-                renderBigSlot(bigHandler, 3, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Left
+                renderBigSlot(bigHandler, 0, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.2F, options);
+                renderBigSlot(bigHandler, 1, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.2F, options);
+                renderBigSlot(bigHandler, 2, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.2F, options);
+                renderBigSlot(bigHandler, 3, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.2F, options);
                 break;
         }
     }
 
+    // ============================================================
+    // Compacting drawers (3 slots)
+    // ============================================================
+
     private void renderBigSlot(BigInventoryHandler handler, int slot, float posX, float posY,
-                               float slotScale, boolean showRender, boolean showCount, float textScale) {
+                               float slotScale, boolean showRender, boolean showCount, float textScale,
+                               ControllableDrawerTile.DrawerOptions options) {
         if (slot >= handler.getStoredStacks().size()) return;
         BigInventoryHandler.BigStack bigStack = handler.getBigStack(slot);
         ItemStack stack = bigStack.getStack();
         if (stack.isEmpty()) return;
 
         long count = bigStack.getAmount();
+        int maxAmount = handler.getSlotLimit(slot);
+        float progress = maxAmount > 0 ? Math.min(1.0f, count / (float) maxAmount) : 0;
+        renderIndicator(posX, posY, slotScale, progress, options);
         if (showRender) {
             renderStackOnFace(stack, posX, posY, slotScale);
         }
@@ -186,7 +200,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     }
 
     // ============================================================
-    // Compacting drawers (3 slots)
+    // Simple compacting drawers (2 slots)
     // ============================================================
 
     private void renderCompactingSlots(CompactingDrawerTile te, ControllableDrawerTile.DrawerOptions options) {
@@ -197,14 +211,10 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         boolean showCount = options == null || options.isShowItemCount();
 
         // 3 slots: 0 = bottom-right, 1 = bottom-left, 2 = top-center
-        renderCompactSlot(handler, 0, 0.75F, 0.27F, showRender, showCount);
-        renderCompactSlot(handler, 1, 0.25F, 0.27F, showRender, showCount);
-        renderCompactSlot(handler, 2, 0.5F,  0.77F, showRender, showCount);
+        renderCompactSlot(handler, 0, 0.75F, 0.27F, showRender, showCount, options);
+        renderCompactSlot(handler, 1, 0.25F, 0.27F, showRender, showCount, options);
+        renderCompactSlot(handler, 2, 0.5F, 0.77F, showRender, showCount, options);
     }
-
-    // ============================================================
-    // Simple compacting drawers (2 slots)
-    // ============================================================
 
     private void renderSimpleCompactingSlots(SimpleCompactingDrawerTile te, ControllableDrawerTile.DrawerOptions options) {
         CompactingInventoryHandler handler = te.getHandler();
@@ -213,24 +223,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         boolean showRender = options == null || options.isShowItemRender();
         boolean showCount = options == null || options.isShowItemCount();
 
-        renderCompactSlot(handler, 0, 0.5F, 0.27F, showRender, showCount);
-        renderCompactSlot(handler, 1, 0.5F, 0.77F, showRender, showCount);
-    }
-
-    private void renderCompactSlot(CompactingInventoryHandler handler, int slot,
-                                   float posX, float posY, boolean showRender, boolean showCount) {
-        if (slot >= handler.getResults().size()) return;
-        CompactingInventoryHandler.Result result = handler.getResults().get(slot);
-        ItemStack stack = result.getStack();
-        if (stack.isEmpty()) return;
-
-        int count = handler.getStackInSlot(slot).getCount();
-        if (showRender) {
-            renderStackOnFace(stack, posX, posY, 0.5F);
-        }
-        if (showCount) {
-            renderCountOnFace(count, posX, posY, 0.5F, 0.2F);
-        }
+        renderCompactSlot(handler, 0, 0.5F, 0.27F, showRender, showCount, options);
+        renderCompactSlot(handler, 1, 0.5F, 0.77F, showRender, showCount, options);
     }
 
     // ============================================================
@@ -260,6 +254,26 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // Fluid drawers
     // ============================================================
 
+    private void renderCompactSlot(CompactingInventoryHandler handler, int slot,
+                                   float posX, float posY, boolean showRender, boolean showCount,
+                                   ControllableDrawerTile.DrawerOptions options) {
+        if (slot >= handler.getResults().size()) return;
+        CompactingInventoryHandler.Result result = handler.getResults().get(slot);
+        ItemStack stack = result.getStack();
+        if (stack.isEmpty()) return;
+
+        int count = handler.getStackInSlot(slot).getCount();
+        int maxAmount = handler.getSlotLimit(slot);
+        float progress = maxAmount > 0 ? Math.min(1.0f, count / (float) maxAmount) : 0;
+        renderIndicator(posX, posY, 0.5F, progress, options);
+        if (showRender) {
+            renderStackOnFace(stack, posX, posY, 0.5F);
+        }
+        if (showCount) {
+            renderCountOnFace(count, posX, posY, 0.5F, 0.2F);
+        }
+    }
+
     private void renderFluidSlots(FluidDrawerTile te, DrawerType drawerType,
                                   ControllableDrawerTile.DrawerOptions options) {
         BigFluidHandler handler = te.getFluidHandler();
@@ -270,32 +284,18 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         switch (drawerType) {
             case X_1:
-                renderSingleFluidSlot(handler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.3F);
+                renderSingleFluidSlot(handler, 0, 0.5F, 0.5F, 1.0F, showRender, showCount, 0.3F, options);
                 break;
             case X_2:
-                renderSingleFluidSlot(handler, 0, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.2F);
-                renderSingleFluidSlot(handler, 1, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.2F);
+                renderSingleFluidSlot(handler, 0, 0.5F, 0.77F, 0.5F, showRender, showCount, 0.2F, options);
+                renderSingleFluidSlot(handler, 1, 0.5F, 0.27F, 0.5F, showRender, showCount, 0.2F, options);
                 break;
             case X_4:
-                renderSingleFluidSlot(handler, 0, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Right
-                renderSingleFluidSlot(handler, 1, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.2F); // Top-Left
-                renderSingleFluidSlot(handler, 2, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Right
-                renderSingleFluidSlot(handler, 3, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.2F); // Bottom-Left
+                renderSingleFluidSlot(handler, 0, 0.75F, 0.77F, 0.5F, showRender, showCount, 0.2F, options);
+                renderSingleFluidSlot(handler, 1, 0.25F, 0.77F, 0.5F, showRender, showCount, 0.2F, options);
+                renderSingleFluidSlot(handler, 2, 0.75F, 0.27F, 0.5F, showRender, showCount, 0.2F, options);
+                renderSingleFluidSlot(handler, 3, 0.25F, 0.27F, 0.5F, showRender, showCount, 0.2F, options);
                 break;
-        }
-    }
-
-    private void renderSingleFluidSlot(BigFluidHandler handler, int slot, float posX, float posY,
-                                       float slotScale, boolean showRender, boolean showCount, float textScale) {
-        if (slot >= handler.getTanksCount()) return;
-        FluidStack fluid = handler.getTankFluid(slot);
-        if (fluid == null || fluid.amount <= 0) return;
-
-        if (showRender) {
-            renderFluidOnFace(fluid, posX, posY, slotScale);
-        }
-        if (showCount) {
-            renderCountOnFace(fluid.amount, posX, posY, slotScale, textScale);
         }
     }
 
@@ -414,6 +414,28 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // Core rendering: count text on face
     // ============================================================
 
+    private void renderSingleFluidSlot(BigFluidHandler handler, int slot, float posX, float posY,
+                                       float slotScale, boolean showRender, boolean showCount, float textScale,
+                                       ControllableDrawerTile.DrawerOptions options) {
+        if (slot >= handler.getTanksCount()) return;
+        FluidStack fluid = handler.getTankFluid(slot);
+        if (fluid == null || fluid.amount <= 0) return;
+
+        int maxAmount = handler.getCapacityPerTank();
+        float progress = maxAmount > 0 ? Math.min(1.0f, fluid.amount / (float) maxAmount) : 0;
+        renderIndicator(posX, posY, slotScale, progress, options);
+        if (showRender) {
+            renderFluidOnFace(fluid, posX, posY, slotScale);
+        }
+        if (showCount) {
+            renderCountOnFace(fluid.amount, posX, posY, slotScale, textScale);
+        }
+    }
+
+    // ============================================================
+    // Indicator (fill progress bar) rendering
+    // ============================================================
+
     /**
      * Render the item/fluid count below the icon on the drawer face.
      *
@@ -458,6 +480,129 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         GlStateManager.depthMask(true);
         GlStateManager.disableBlend();
         GlStateManager.enableLighting();
+        GlStateManager.popMatrix();
+    }
+
+    /**
+     * Render a fill progress bar below the item icon on the drawer face.
+     * Uses the indicator.png texture (16x16), split into background (top half) and foreground (bottom half).
+     * Indicator modes (from ConfigurationAction.INDICATOR):
+     * 0 = Off, 1 = Progress bar always, 2 = Only when full, 3 = Only when full (no background)
+     */
+    private void renderIndicator(float posX, float posY, float slotScale, float progress,
+                                 ControllableDrawerTile.DrawerOptions options) {
+        if (options == null) return;
+        int indicatorValue = options.getAdvancedValue(ConfigurationToolItem.ConfigurationAction.INDICATOR);
+        if (indicatorValue == 0) return;
+
+        GlStateManager.pushMatrix();
+
+        // Position the indicator below the slot center
+        float cX = posX;
+        float cY = posY;
+        float barWidth = slotScale * 0.5f;   // half the slot width
+        float barHeight = slotScale * 0.08f;  // thin bar
+        float yOffset = slotScale * 0.415f;   // below center
+
+        float x1 = cX - barWidth / 2f;
+        float x2 = cX + barWidth / 2f;
+        float y1 = cY - yOffset - barHeight;
+        float y2 = cY - yOffset;
+        float z = 1.002f;
+
+        Minecraft.getMinecraft().getTextureManager().bindTexture(INDICATOR_TEXTURE);
+        GlStateManager.color(1, 1, 1, 1);
+        GlStateManager.enableBlend();
+        GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        GlStateManager.disableLighting();
+
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
+        // Background bar (top half of texture: V 0.0 ~ 0.5) - render for modes 1 and 2
+        if (indicatorValue != 3) {
+            buffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+            buffer.pos(x1, y1, z).tex(0.0, 0.125).endVertex();
+            buffer.pos(x2, y1, z).tex(0.5, 0.125).endVertex();
+            buffer.pos(x2, y2, z).tex(0.5, 0.0).endVertex();
+            buffer.pos(x1, y2, z).tex(0.0, 0.0).endVertex();
+            tessellator.draw();
+        }
+
+        // Foreground (progress) bar (bottom half of texture: V 0.5 ~ 1.0) - render for mode 1 always, or modes 2/3 only when full
+        if (indicatorValue == 1 || progress >= 1.0f) {
+            float progressX2 = x1 + (x2 - x1) * progress;
+            float progressU2 = 0.5f * progress;
+            buffer.begin(7, DefaultVertexFormats.POSITION_TEX);
+            buffer.pos(x1, y1, z + 0.0001f).tex(0.0, 0.625).endVertex();
+            buffer.pos(progressX2, y1, z + 0.0001f).tex(progressU2, 0.625).endVertex();
+            buffer.pos(progressX2, y2, z + 0.0001f).tex(progressU2, 0.5).endVertex();
+            buffer.pos(x1, y2, z + 0.0001f).tex(0.0, 0.5).endVertex();
+            tessellator.draw();
+        }
+
+        GlStateManager.enableLighting();
+        GlStateManager.disableBlend();
+        GlStateManager.popMatrix();
+    }
+
+    // ============================================================
+    // Upgrade icons rendering
+    // ============================================================
+
+    /**
+     * Render upgrade item icons at the bottom-left corner of the drawer face.
+     * Also renders void upgrade icon at the bottom-right if the drawer is in void mode.
+     */
+    private void renderUpgrades(ControllableDrawerTile te, ControllableDrawerTile.DrawerOptions options) {
+        if (options == null || !options.isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_UPGRADES)) return;
+
+        float iconScale = 0.0625f; // 1/16th scale for upgrade icons
+        float zOffset = 1.005f;
+
+        GlStateManager.pushMatrix();
+
+        // Bottom-left corner position
+        float baseX = 0.03f;
+        float baseY = 0.03f;
+
+        for (int i = 0; i < te.getStorageUpgrades().getSlots(); i++) {
+            ItemStack upgradeStack = te.getStorageUpgrades().getStackInSlot(i);
+            if (!upgradeStack.isEmpty()) {
+                GlStateManager.pushMatrix();
+                GlStateManager.translate(baseX + i * iconScale, baseY, zOffset);
+                GlStateManager.scale(iconScale, iconScale, 0.00001f);
+
+                RenderHelper.enableStandardItemLighting();
+                GlStateManager.enableRescaleNormal();
+                try {
+                    Minecraft.getMinecraft().getRenderItem().renderItemIntoGUI(upgradeStack, 0, 0);
+                } catch (Exception ignored) {
+                }
+                GlStateManager.disableRescaleNormal();
+
+                GlStateManager.popMatrix();
+            }
+        }
+
+        // Void upgrade icon at bottom-right
+        if (te.isVoid()) {
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(1.0f - baseX - iconScale, baseY, zOffset);
+            GlStateManager.scale(iconScale, iconScale, 0.00001f);
+
+            RenderHelper.enableStandardItemLighting();
+            GlStateManager.enableRescaleNormal();
+            try {
+                Minecraft.getMinecraft().getRenderItem().renderItemIntoGUI(
+                        new ItemStack(FunctionalStorageLgeacy.VOID_UPGRADE), 0, 0);
+            } catch (Exception ignored) {
+            }
+            GlStateManager.disableRescaleNormal();
+
+            GlStateManager.popMatrix();
+        }
+
         GlStateManager.popMatrix();
     }
 }
