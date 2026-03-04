@@ -102,6 +102,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
                        float partialTicks, int destroyStage, float alpha) {
         if (te == null || te.getWorld() == null) return;
 
+        // Distance check using client config render range
+        double distSq = te.getDistanceSq(
+                Minecraft.getMinecraft().player.posX,
+                Minecraft.getMinecraft().player.posY,
+                Minecraft.getMinecraft().player.posZ);
+        double renderRange = FunctionalStorageClientConfig.DRAWER_RENDER_RANGE;
+        if (distSq > renderRange * renderRange) return;
+
         IBlockState state = te.getWorld().getBlockState(te.getPos());
         if (!(state.getBlock() instanceof DrawerBlock)) return;
 
@@ -557,7 +565,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     private void renderUpgrades(ControllableDrawerTile te, ControllableDrawerTile.DrawerOptions options) {
         if (options == null || !options.isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_UPGRADES)) return;
 
-        float iconScale = 0.0625f; // 1/16th scale for upgrade icons
+        float iconScale = 0.01f;
         float zOffset = 1.005f;
 
         GlStateManager.pushMatrix();
@@ -565,12 +573,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         // Bottom-left corner position
         float baseX = 0.03f;
         float baseY = 0.03f;
+        int iconIndex = 0;
 
+        // Render storage upgrades
         for (int i = 0; i < te.getStorageUpgrades().getSlots(); i++) {
             ItemStack upgradeStack = te.getStorageUpgrades().getStackInSlot(i);
             if (!upgradeStack.isEmpty()) {
                 GlStateManager.pushMatrix();
-                GlStateManager.translate(baseX + i * iconScale, baseY, zOffset);
+                GlStateManager.translate(baseX + iconIndex * iconScale * 16, baseY, zOffset);
                 GlStateManager.scale(iconScale, iconScale, 0.00001f);
 
                 RenderHelper.enableStandardItemLighting();
@@ -582,13 +592,14 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
                 GlStateManager.disableRescaleNormal();
 
                 GlStateManager.popMatrix();
+                iconIndex++;
             }
         }
 
         // Void upgrade icon at bottom-right
         if (te.isVoid()) {
             GlStateManager.pushMatrix();
-            GlStateManager.translate(1.0f - baseX - iconScale, baseY, zOffset);
+            GlStateManager.translate(baseX + iconIndex * iconScale * 16, baseY, zOffset);
             GlStateManager.scale(iconScale, iconScale, 0.00001f);
 
             RenderHelper.enableStandardItemLighting();

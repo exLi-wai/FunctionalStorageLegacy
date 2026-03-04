@@ -1,7 +1,7 @@
 package com.xinyihl.functionalstoragelgeacy.block.tile;
 
 import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
-import com.xinyihl.functionalstoragelgeacy.block.DrawerBlock;
+import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
 import com.xinyihl.functionalstoragelgeacy.fluid.ControllerFluidHandler;
 import com.xinyihl.functionalstoragelgeacy.inventory.ControllerInventoryHandler;
 import com.xinyihl.functionalstoragelgeacy.inventory.ILockable;
@@ -20,14 +20,12 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,9 +37,9 @@ public class StorageControllerTile extends ControllableDrawerTile {
 
     private static final HashMap<UUID, Long> INTERACTION_LOGGER = new HashMap<>();
 
-    private ConnectedDrawers connectedDrawers;
-    private ControllerInventoryHandler inventoryHandler;
-    private ControllerFluidHandler fluidHandler;
+    private final ConnectedDrawers connectedDrawers;
+    private final ControllerInventoryHandler inventoryHandler;
+    private final ControllerFluidHandler fluidHandler;
 
     public StorageControllerTile() {
         super();
@@ -210,15 +208,24 @@ public class StorageControllerTile extends ControllableDrawerTile {
      * @param positions Drawer positions to link/unlink
      * @return true if any change was made
      */
+    /**
+     * Get the effective controller search range.
+     * Base range from config + storage upgrade bonus / range divisor.
+     */
+    public double getControllerRange() {
+        return FunctionalStorageConfig.DRAWER_CONTROLLER_LINKING_RANGE
+                + getStorageMultiplier() / FunctionalStorageConfig.RANGE_DIVISOR;
+    }
+
     public boolean addConnectedDrawers(LinkingToolItem.ActionMode action, BlockPos... positions) {
-        double range = getStorageMultiplier();
+        double range = getControllerRange();
         boolean didWork = false;
         AxisAlignedBB area = new AxisAlignedBB(pos).grow(range);
 
         for (BlockPos position : positions) {
-            if (world.getBlockState(position).getBlock() instanceof DrawerBlock
-                    && world.getBlockState(position).getBlock() == FunctionalStorageLgeacy.DRAWER_CONTROLLER_BLOCK) {
-                continue; // Don't link controllers to controllers
+            // Skip controller blocks (don't link controllers to themselves)
+            if (world.getBlockState(position).getBlock() == FunctionalStorageLgeacy.DRAWER_CONTROLLER_BLOCK) {
+                continue;
             }
 
             TileEntity te = world.getTileEntity(position);

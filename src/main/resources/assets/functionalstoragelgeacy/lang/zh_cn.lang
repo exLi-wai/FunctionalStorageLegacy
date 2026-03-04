@@ -37,8 +37,14 @@ item.functionalstoragelgeacy.gold_upgrade.name=金升级
 item.functionalstoragelgeacy.iron_downgrade.name=铁降级
 item.functionalstoragelgeacy.linking_tool.name=链接工具
 item.functionalstoragelgeacy.netherite_upgrade.name=下界合金升级
+item.functionalstoragelgeacy.pulling_upgrade.name=拉取升级
+item.functionalstoragelgeacy.pushing_upgrade.name=推送升级
 item.functionalstoragelgeacy.redstone_upgrade.name=红石升级
 item.functionalstoragelgeacy.void_upgrade.name=虚空升级
+
+# Tooltips
+item.functionalstoragelgeacy.iron_downgrade.desc=减少抽屉存储容量
+item.functionalstoragelgeacy.storage_upgrade.multiplier=存储倍率：%sx
 
 linkingtool.controller=控制器：
 linkingtool.controller.configured=已将控制器与工具连接
@@ -63,8 +69,18 @@ linkingtool.single_drawer.removed=移除单个抽屉到控制器的链接
 linkingtool.use=* 潜行+右键单击空气可更改模式或清除频率。\n* 左键单击末影抽屉以存储其频率。\n* 右键单击空气可以更改操作。\n\n右键单击控制器以设置该工具，然后使用它链接附近的抽屉。\n\n手持该工具时，它将显示链接到所选控制器的抽屉。
 
 # Configuration Tool
-configtool.action.locking=锁定
-configtool.action.toggle_numbers=切换编号
-configtool.action.toggle_render=切换渲染
-configtool.action.toggle_upgrades=切换更新
-configtool.action.indicator=指示器
+configurationtool.configmode=配置模式：
+configurationtool.configmode.swapped=配置模式已切换为：
+configurationtool.configmode.locking=锁定
+configurationtool.configmode.toggle_numbers=切换编号
+configurationtool.configmode.toggle_render=切换渲染
+configurationtool.configmode.toggle_upgrades=切换升级显示
+configurationtool.configmode.indicator=指示器
+configurationtool.configmode.indicator.mode_0=关闭
+configurationtool.configmode.indicator.mode_1=开启（满时）
+configurationtool.configmode.indicator.mode_2=开启（空时）
+configurationtool.configmode.indicator.mode_3=开启（始终）
+configurationtool.use=右键单击抽屉以应用。潜行+右键单击空气以切换模式。
+
+# GUI
+gui.functionalstorage.open_gui=打开界面

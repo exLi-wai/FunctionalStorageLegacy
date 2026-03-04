@@ -5,7 +5,6 @@ import com.xinyihl.functionalstoragelgeacy.block.tile.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelgeacy.block.tile.FluidDrawerTile;
 import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
 import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -202,18 +201,30 @@ public class UpgradeItem extends Item {
         IItemHandler drawerHandler = tile.getItemHandler();
         if (drawerHandler == null) return;
 
-        // Pick up items in the collection area
-        AxisAlignedBB collectArea = new AxisAlignedBB(collectPos).grow(0.5);
+        // Use exact block AABB for collection area (matches 1.21 behavior)
+        AxisAlignedBB collectArea = new AxisAlignedBB(collectPos);
         List<EntityItem> items = world.getEntitiesWithinAABB(EntityItem.class, collectArea);
         for (EntityItem entity : items) {
             if (entity.isDead) continue;
             ItemStack entityStack = entity.getItem();
             if (entityStack.isEmpty()) continue;
-            ItemStack remainder = ItemHandlerHelper.insertItemStacked(drawerHandler, entityStack.copy(), false);
-            if (remainder.isEmpty()) {
-                entity.setDead();
-            } else {
-                entity.setItem(remainder);
+
+            // Limit items collected per entity to config value (matches 1.21 behavior)
+            int maxCollect = Math.min(entityStack.getCount(), FunctionalStorageConfig.UPGRADE_COLLECTOR_ITEMS);
+            ItemStack toInsert = entityStack.copy();
+            toInsert.setCount(maxCollect);
+
+            ItemStack remainder = ItemHandlerHelper.insertItemStacked(drawerHandler, toInsert, false);
+            int inserted = maxCollect - (remainder.isEmpty() ? 0 : remainder.getCount());
+            if (inserted > 0) {
+                entityStack.shrink(inserted);
+                if (entityStack.isEmpty()) {
+                    entity.setDead();
+                } else {
+                    entity.setItem(entityStack);
+                }
+                // Stop after processing one entity (matches 1.21 behavior)
+                return;
             }
         }
     }

@@ -88,7 +88,7 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
         }
 
         // ---- 3. Controller range box (green wireframe + translucent green faces) ----
-        double range = te.getStorageMultiplier() + 0.001;
+        double range = te.getControllerRange() + 0.001;
         AxisAlignedBB rangeBox = new AxisAlignedBB(0, 0, 0, 1, 1, 1).grow(range);
         renderWireframeBox(rangeBox, 0.5f, 1f, 0.5f, 1f);
         renderFilledBox(rangeBox, 0.5f, 1f, 0.5f, 0.25f);
