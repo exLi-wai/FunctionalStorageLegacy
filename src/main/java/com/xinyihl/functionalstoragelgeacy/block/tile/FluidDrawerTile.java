@@ -8,8 +8,11 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nullable;
@@ -69,8 +72,8 @@ public class FluidDrawerTile extends ControllableDrawerTile {
                                    float hitX, float hitY, float hitZ, int slot) {
         ItemStack heldStack = player.getHeldItem(hand);
 
-        if (!world.isRemote && !heldStack.isEmpty()) {
-            boolean fluidInteraction = FluidUtil.interactWithFluidHandler(player, hand, fluidHandler);
+        if (!world.isRemote && slot >= 0 && slot < fluidHandler.getTanksCount() && !heldStack.isEmpty()) {
+            boolean fluidInteraction = FluidUtil.interactWithFluidHandler(player, hand, getSingleTankHandler(slot));
             if (fluidInteraction) {
                 return true;
             }
@@ -81,13 +84,40 @@ public class FluidDrawerTile extends ControllableDrawerTile {
 
     @Override
     public void onClicked(EntityPlayer player, int slot) {
-        if (!world.isRemote && slot != -1) {
+        if (!world.isRemote && slot >= 0 && slot < fluidHandler.getTanksCount()) {
             ItemStack heldStack = player.getHeldItem(EnumHand.MAIN_HAND);
             if (!heldStack.isEmpty()) {
-                // Try to fill fluid container from drawer
-                FluidUtil.interactWithFluidHandler(player, EnumHand.MAIN_HAND, fluidHandler);
+                FluidUtil.interactWithFluidHandler(player, EnumHand.MAIN_HAND, getSingleTankHandler(slot));
             }
         }
+    }
+
+    private IFluidHandler getSingleTankHandler(final int slot) {
+        return new IFluidHandler() {
+            @Override
+            public IFluidTankProperties[] getTankProperties() {
+                if (slot < 0 || slot >= fluidHandler.getTanksCount()) {
+                    return new IFluidTankProperties[0];
+                }
+                IFluidTankProperties[] all = fluidHandler.getTankProperties();
+                return new IFluidTankProperties[]{all[slot]};
+            }
+
+            @Override
+            public int fill(FluidStack resource, boolean doFill) {
+                return fluidHandler.fillTank(slot, resource, doFill);
+            }
+
+            @Override
+            public FluidStack drain(FluidStack resource, boolean doDrain) {
+                return fluidHandler.drainTank(slot, resource, doDrain);
+            }
+
+            @Override
+            public FluidStack drain(int maxDrain, boolean doDrain) {
+                return fluidHandler.drainTank(slot, maxDrain, doDrain);
+            }
+        };
     }
 
     @Override

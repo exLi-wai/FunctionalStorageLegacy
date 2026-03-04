@@ -103,3 +103,28 @@ configurationtool.use=Right-click a drawer to apply. Sneak+right-click air to cy
 
 # GUI
 gui.functionalstorage.open_gui=Open GUI
+
+# Drawer Item Tooltip
+drawer.tooltip.stored=Stored:
+drawer.tooltip.locked=Locked:
+drawer.tooltip.creative=Creative:
+drawer.tooltip.void=Void:
+drawer.tooltip.storage_upgrades=Storage Upgrades:
+drawer.tooltip.utility_upgrades=Utility Upgrades:
+drawer.tooltip.fluids=Fluids: %s tank(s), %s mB
+drawer.tooltip.empty=No saved drawer data
+drawer.tooltip.yes=Yes
+drawer.tooltip.no=No
+
+# TOP
+tooltip.functionalstoragelgeacy.title=Functional Storage
+tooltip.functionalstoragelgeacy.stored=Stored:
+tooltip.functionalstoragelgeacy.locked=Locked:
+tooltip.functionalstoragelgeacy.creative=Creative:
+tooltip.functionalstoragelgeacy.void=Void:
+tooltip.functionalstoragelgeacy.upgrades=Upgrades:
+tooltip.functionalstoragelgeacy.tank=Tank
+tooltip.functionalstoragelgeacy.total=Total:
+tooltip.functionalstoragelgeacy.empty=Empty
+tooltip.functionalstoragelgeacy.yes=Yes
+tooltip.functionalstoragelgeacy.no=No

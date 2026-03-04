@@ -142,6 +142,7 @@ dependencies {
 
     // implementation rfg.deobf("curse.maven:betterbuilderswands-238403:2691084")
     // implementation rfg.deobf("curse.maven:custom-selection-box-port-308792:2675316")
+    implementation rfg.deobf("curse.maven:theoneprobe-245211:2667280")
 }
 
 // Adds Access Transformer files to tasks

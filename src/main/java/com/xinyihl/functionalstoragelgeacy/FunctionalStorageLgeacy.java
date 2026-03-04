@@ -2,8 +2,10 @@ package com.xinyihl.functionalstoragelgeacy;
 
 import com.xinyihl.functionalstoragelgeacy.block.*;
 import com.xinyihl.functionalstoragelgeacy.block.tile.*;
+import com.xinyihl.functionalstoragelgeacy.compat.top.TheOneProbeCompat;
 import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
 import com.xinyihl.functionalstoragelgeacy.item.ConfigurationToolItem;
+import com.xinyihl.functionalstoragelgeacy.item.DrawerItemBlock;
 import com.xinyihl.functionalstoragelgeacy.item.LinkingToolItem;
 import com.xinyihl.functionalstoragelgeacy.item.StorageUpgradeItem;
 import com.xinyihl.functionalstoragelgeacy.item.UpgradeItem;
@@ -92,6 +94,7 @@ public class FunctionalStorageLgeacy {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         FunctionalStorageConfig.init(event.getSuggestedConfigurationFile());
+        TheOneProbeCompat.register();
 
         NetworkHandler.init();
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
@@ -259,7 +262,7 @@ public class FunctionalStorageLgeacy {
         }
 
         private static ItemBlock createItemBlock(Block block) {
-            ItemBlock itemBlock = new ItemBlock(block);
+            ItemBlock itemBlock = block instanceof DrawerBlock ? new DrawerItemBlock(block) : new ItemBlock(block);
             itemBlock.setRegistryName(block.getRegistryName());
             return itemBlock;
         }

@@ -1,6 +1,12 @@
 package com.xinyihl.functionalstoragelgeacy.config;
 
+import com.xinyihl.functionalstoragelgeacy.Tags;
+import net.minecraftforge.common.config.Config;
+import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.io.File;
 
@@ -23,6 +29,7 @@ public class FunctionalStorageConfig {
     public static int NETHERITE_MULTIPLIER = 32;
     public static int FLUID_DIVISOR = 2;
     public static int RANGE_DIVISOR = 4;
+    public static boolean ENABLE_TOP_COMPATIBILITY = false;
 
     private static Configuration config;
 
@@ -38,6 +45,7 @@ public class FunctionalStorageConfig {
         UPGRADE_PUSH_ITEMS = config.getInt("upgradePushItems", "general", 4, 1, 64, "How many items the pushing upgrade will try to push");
         UPGRADE_PUSH_FLUID = config.getInt("upgradePushFluid", "general", 500, 1, 10000, "How much fluid (in mb) the pushing upgrade will try to push");
         UPGRADE_COLLECTOR_ITEMS = config.getInt("upgradeCollectorItems", "general", 4, 1, 64, "How many items the collector upgrade will try to pull");
+        ENABLE_TOP_COMPATIBILITY = config.getBoolean("enableTOPCompatibility", "compatibility", false, "Enable The One Probe compatibility integration");
 
         COPPER_MULTIPLIER = config.getInt("copperMultiplier", "storage", 8, 1, 1024, "Copper Upgrade storage multiplier");
         GOLD_MULTIPLIER = config.getInt("goldMultiplier", "storage", 16, 1, 1024, "Gold Upgrade storage multiplier");

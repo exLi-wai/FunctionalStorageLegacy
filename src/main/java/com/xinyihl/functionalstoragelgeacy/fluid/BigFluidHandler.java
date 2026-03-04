@@ -200,6 +200,54 @@ public abstract class BigFluidHandler implements IFluidHandler {
         return tankCount;
     }
 
+    public int fillTank(int tank, FluidStack resource, boolean doFill) {
+        if (resource == null || resource.amount <= 0) return 0;
+        if (tank < 0 || tank >= tanks.size()) return 0;
+
+        CustomFluidTank target = tanks.get(tank);
+        FluidStack current = target.getFluid();
+
+        if (current != null && current.amount > 0 && !current.isFluidEqual(resource)) {
+            return 0;
+        }
+
+        if ((current == null || current.amount <= 0) && isLocked()
+                && target.getLockedFluid() != null
+                && !target.getLockedFluid().isFluidEqual(resource)) {
+            return 0;
+        }
+
+        int filled = target.fill(resource.copy(), doFill);
+        if (filled > 0 && doFill) onChange();
+        if (isVoid()) return resource.amount;
+        return filled;
+    }
+
+    @Nullable
+    public FluidStack drainTank(int tank, int maxDrain, boolean doDrain) {
+        if (maxDrain <= 0) return null;
+        if (tank < 0 || tank >= tanks.size()) return null;
+
+        CustomFluidTank target = tanks.get(tank);
+        FluidStack drained = target.drain(maxDrain, doDrain);
+        if (drained != null && drained.amount > 0 && doDrain) onChange();
+        return drained;
+    }
+
+    @Nullable
+    public FluidStack drainTank(int tank, FluidStack resource, boolean doDrain) {
+        if (resource == null || resource.amount <= 0) return null;
+        if (tank < 0 || tank >= tanks.size()) return null;
+
+        CustomFluidTank target = tanks.get(tank);
+        FluidStack current = target.getFluid();
+        if (current == null || !current.isFluidEqual(resource)) return null;
+
+        FluidStack drained = target.drain(resource.amount, doDrain);
+        if (drained != null && drained.amount > 0 && doDrain) onChange();
+        return drained;
+    }
+
     @Nullable
     public FluidStack getTankFluid(int tank) {
         if (tank >= 0 && tank < tanks.size()) {

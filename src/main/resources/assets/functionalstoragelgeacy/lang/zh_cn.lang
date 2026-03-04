@@ -93,3 +93,28 @@ configurationtool.use=右键单击抽屉以应用。潜行+右键单击空气以
 
 # GUI
 gui.functionalstorage.open_gui=打开界面
+
+# Drawer Item Tooltip
+drawer.tooltip.stored=已存储：
+drawer.tooltip.locked=锁定：
+drawer.tooltip.creative=创造：
+drawer.tooltip.void=虚空：
+drawer.tooltip.storage_upgrades=存储升级：
+drawer.tooltip.utility_upgrades=功能升级：
+drawer.tooltip.fluids=流体：%s 个槽位，%s mB
+drawer.tooltip.empty=无保存的抽屉数据
+drawer.tooltip.yes=是
+drawer.tooltip.no=否
+
+# TOP
+tooltip.functionalstoragelgeacy.title=功能性存储
+tooltip.functionalstoragelgeacy.stored=已存储：
+tooltip.functionalstoragelgeacy.locked=锁定：
+tooltip.functionalstoragelgeacy.creative=创造：
+tooltip.functionalstoragelgeacy.void=虚空：
+tooltip.functionalstoragelgeacy.upgrades=升级：
+tooltip.functionalstoragelgeacy.tank=槽位
+tooltip.functionalstoragelgeacy.total=总量：
+tooltip.functionalstoragelgeacy.empty=空
+tooltip.functionalstoragelgeacy.yes=是
+tooltip.functionalstoragelgeacy.no=否
