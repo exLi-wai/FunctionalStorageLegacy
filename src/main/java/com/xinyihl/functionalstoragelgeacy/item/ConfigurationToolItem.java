@@ -2,7 +2,6 @@ package com.xinyihl.functionalstoragelgeacy.item;
 
 import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
 import com.xinyihl.functionalstoragelgeacy.block.tile.ControllableDrawerTile;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -21,6 +20,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -107,8 +107,8 @@ public class ConfigurationToolItem extends Item {
                 + new TextComponentTranslation("configurationtool.configmode").getUnformattedText()
                 + " " + TextFormatting.WHITE
                 + new TextComponentTranslation("configurationtool.configmode." + action.name().toLowerCase(Locale.ROOT)).getUnformattedText());
-        tooltip.add("");
-        tooltip.add(TextFormatting.GRAY + new TextComponentTranslation("configurationtool.use").getUnformattedText());
+        tooltip.add(TextFormatting.GRAY + "");
+        tooltip.addAll(Arrays.asList(new TextComponentTranslation("configurationtool.use").getUnformattedText().split("\\\\n")));
     }
 
     /**
