@@ -87,10 +87,12 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
         }
 
         // ---- 3. Controller range box (green wireframe + translucent green faces) ----
-        double range = te.getControllerRange() + 0.001;
-        AxisAlignedBB rangeBox = new AxisAlignedBB(0, 0, 0, 1, 1, 1).grow(range);
-        renderWireframeBox(rangeBox, 0.5f, 1f, 0.5f, 1f);
-        //renderFilledBox(rangeBox, 0.5f, 1f, 0.5f, 0.15f);
+        double range = te.getControllerRange();
+        AxisAlignedBB rangeBox = new AxisAlignedBB(0, 0, 0, 1, 1, 1).grow(range).grow(0.002);
+        renderWireframeBox(new AxisAlignedBB(0, 0, 0, 1, 1, 1).grow(0.002), 1f, 0.293f, 0.416f, 1f);
+        renderWireframeBox(rangeBox, 0.0f, 1f, 0.0f, 1f);
+        renderGridBox(rangeBox, 0.0f, 1f, 0.0f, 0.2f);
+        //renderFilledBox(rangeBox, 0.0f, 1f, 0.0f, 0.15f);
 
         // Restore GL state
         GlStateManager.enableDepth();
@@ -153,6 +155,63 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
         buffer.pos(x2, y2, z2).color(r, g, b, a).endVertex();
         buffer.pos(x1, y1, z2).color(r, g, b, a).endVertex();
         buffer.pos(x1, y2, z2).color(r, g, b, a).endVertex();
+
+        tessellator.draw();
+    }
+
+    private void renderGridBox(AxisAlignedBB box, float r, float g, float b, float a) {
+        Tessellator tessellator = Tessellator.getInstance();
+        BufferBuilder buffer = tessellator.getBuffer();
+
+        GlStateManager.glLineWidth(1.0f);
+        buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
+
+        float x1 = (float) box.minX;
+        float y1 = (float) box.minY;
+        float z1 = (float) box.minZ;
+        float x2 = (float) box.maxX;
+        float y2 = (float) box.maxY;
+        float z2 = (float) box.maxZ;
+
+        // Draw grid lines on faces
+        for (float x = (float) Math.ceil(x1); x < x2; x += 1.0f) {
+            // Top and Bottom (YZ)
+            buffer.pos(x, y1, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x, y1, z2).color(r, g, b, a).endVertex();
+            buffer.pos(x, y2, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x, y2, z2).color(r, g, b, a).endVertex();
+            // Front and Back (XY)
+            buffer.pos(x, y1, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x, y2, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x, y1, z2).color(r, g, b, a).endVertex();
+            buffer.pos(x, y2, z2).color(r, g, b, a).endVertex();
+        }
+
+        for (float y = (float) Math.ceil(y1); y < y2; y += 1.0f) {
+            // Front and Back (XZ)
+            buffer.pos(x1, y, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x1, y, z2).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y, z2).color(r, g, b, a).endVertex();
+            // Left and Right (YZ)
+            buffer.pos(x1, y, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x1, y, z2).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y, z1).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y, z2).color(r, g, b, a).endVertex();
+        }
+
+        for (float z = (float) Math.ceil(z1); z < z2; z += 1.0f) {
+            // Top and Bottom (XZ)
+            buffer.pos(x1, y1, z).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y1, z).color(r, g, b, a).endVertex();
+            buffer.pos(x1, y2, z).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y2, z).color(r, g, b, a).endVertex();
+            // Left and Right (XY)
+            buffer.pos(x1, y1, z).color(r, g, b, a).endVertex();
+            buffer.pos(x1, y2, z).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y1, z).color(r, g, b, a).endVertex();
+            buffer.pos(x2, y2, z).color(r, g, b, a).endVertex();
+        }
 
         tessellator.draw();
     }
