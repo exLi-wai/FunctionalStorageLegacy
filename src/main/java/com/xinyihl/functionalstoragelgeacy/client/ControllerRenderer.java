@@ -90,8 +90,9 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
         double range = te.getControllerRange();
         AxisAlignedBB rangeBox = new AxisAlignedBB(0, 0, 0, 1, 1, 1).grow(range).grow(0.002);
         renderWireframeBox(new AxisAlignedBB(0, 0, 0, 1, 1, 1).grow(0.002), 1f, 0.293f, 0.416f, 1f);
+        GlStateManager.enableDepth();
         renderWireframeBox(rangeBox, 0.0f, 1f, 0.0f, 1f);
-        renderGridBox(rangeBox, 0.0f, 1f, 0.0f, 0.2f);
+        renderGridBox(rangeBox, 0.0f, 1f, 0.0f, 0.5f);
         //renderFilledBox(rangeBox, 0.0f, 1f, 0.0f, 0.15f);
 
         // Restore GL state
@@ -163,7 +164,7 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
 
-        GlStateManager.glLineWidth(1.0f);
+        GlStateManager.glLineWidth(1.1f);
         buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
 
         float x1 = (float) box.minX;
