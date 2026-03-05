@@ -129,22 +129,36 @@ public class CompactingUtil {
      * and slots to the right become lower tiers. Remaining slots are empty.
      */
     public static List<CompactingInventoryHandler.Result> getCompactingResults(World world, ItemStack stack, int maxSlots, int clickedSlot) {
-        List<CompactingInventoryHandler.Result> base = getCompactingResults(world, stack, maxSlots);
-        if (clickedSlot < 0 || clickedSlot >= maxSlots) {
-            return base;
+        List<CompactingInventoryHandler.Result> fallback = getCompactingResults(world, stack, maxSlots);
+        if (clickedSlot < 0 || clickedSlot >= maxSlots || stack.isEmpty()) {
+            return fallback;
         }
 
-        int clickedIndex = -1;
-        for (int i = 0; i < base.size(); i++) {
-            ItemStack tierStack = base.get(i).getStack();
-            if (!tierStack.isEmpty() && BigInventoryHandler.areItemStacksEqual(tierStack, stack)) {
-                clickedIndex = i;
+        int maxHigher = clickedSlot;
+        int maxLower = maxSlots - clickedSlot - 1;
+
+        List<HigherTier> higherTiers = new ArrayList<>();
+        ItemStack searching = stack.copy();
+        searching.setCount(1);
+        for (int i = 0; i < maxHigher; i++) {
+            HigherTier higher = findHigherTier(world, searching);
+            if (higher == null) {
                 break;
             }
+            higherTiers.add(higher);
+            searching = higher.result.copy();
         }
 
-        if (clickedIndex < 0) {
-            return base;
+        List<LowerTier> lowerTiers = new ArrayList<>();
+        searching = stack.copy();
+        searching.setCount(1);
+        for (int i = 0; i < maxLower; i++) {
+            LowerTier lower = findLowerTier(world, searching);
+            if (lower == null) {
+                break;
+            }
+            lowerTiers.add(lower);
+            searching = lower.result.copy();
         }
 
         List<CompactingInventoryHandler.Result> anchored = new ArrayList<>();
@@ -152,21 +166,36 @@ public class CompactingUtil {
             anchored.add(new CompactingInventoryHandler.Result(ItemStack.EMPTY, 1));
         }
 
-        // Place clicked item in clicked slot.
-        anchored.set(clickedSlot, new CompactingInventoryHandler.Result(base.get(clickedIndex).getStack(), base.get(clickedIndex).getNeeded()));
-
-        // Fill left side with higher tiers (if any).
-        int leftSource = clickedIndex - 1;
-        for (int leftSlot = clickedSlot - 1; leftSlot >= 0 && leftSource >= 0; leftSlot--, leftSource--) {
-            CompactingInventoryHandler.Result source = base.get(leftSource);
-            anchored.set(leftSlot, new CompactingInventoryHandler.Result(source.getStack(), source.getNeeded()));
+        // Needed values are normalized to the lowest visible tier on the right side.
+        int clickedNeeded = 1;
+        for (LowerTier lower : lowerTiers) {
+            clickedNeeded *= lower.count;
         }
 
-        // Fill right side with lower tiers (if any).
-        int rightSource = clickedIndex + 1;
-        for (int rightSlot = clickedSlot + 1; rightSlot < maxSlots && rightSource < base.size(); rightSlot++, rightSource++) {
-            CompactingInventoryHandler.Result source = base.get(rightSource);
-            anchored.set(rightSlot, new CompactingInventoryHandler.Result(source.getStack(), source.getNeeded()));
+        ItemStack clickedStack = stack.copy();
+        clickedStack.setCount(1);
+        anchored.set(clickedSlot, new CompactingInventoryHandler.Result(clickedStack, clickedNeeded));
+
+        int higherNeeded = clickedNeeded;
+        for (int i = 0; i < higherTiers.size(); i++) {
+            HigherTier higher = higherTiers.get(i);
+            higherNeeded *= higher.inputCount;
+            int targetSlot = clickedSlot - 1 - i;
+            if (targetSlot < 0) {
+                break;
+            }
+            anchored.set(targetSlot, new CompactingInventoryHandler.Result(higher.result.copy(), higherNeeded));
+        }
+
+        int lowerNeeded = clickedNeeded;
+        for (int i = 0; i < lowerTiers.size(); i++) {
+            LowerTier lower = lowerTiers.get(i);
+            lowerNeeded /= lower.count;
+            int targetSlot = clickedSlot + 1 + i;
+            if (targetSlot >= maxSlots) {
+                break;
+            }
+            anchored.set(targetSlot, new CompactingInventoryHandler.Result(lower.result.copy(), lowerNeeded));
         }
 
         return anchored;
