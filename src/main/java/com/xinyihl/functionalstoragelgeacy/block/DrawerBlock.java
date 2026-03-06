@@ -43,6 +43,10 @@ public abstract class DrawerBlock extends Block {
                 .withProperty(LOCKED, false));
         this.setHardness(2.5F);
         this.setResistance(8.0F);
+
+        this.useNeighborBrightness = true;
+        this.setLightOpacity(255);
+
         this.setCreativeTab(FunctionalStorageLgeacy.CREATIVE_TAB);
     }
 
@@ -199,7 +203,7 @@ public abstract class DrawerBlock extends Block {
 
     @Override
     public boolean isFullCube(IBlockState state) {
-        return true;
+        return false;
     }
 
     @Override
