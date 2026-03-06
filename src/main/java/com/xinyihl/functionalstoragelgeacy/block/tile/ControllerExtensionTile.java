@@ -3,9 +3,11 @@ package com.xinyihl.functionalstoragelgeacy.block.tile;
 import com.xinyihl.functionalstoragelgeacy.fluid.ControllerFluidHandler;
 import com.xinyihl.functionalstoragelgeacy.inventory.ControllerInventoryHandler;
 import com.xinyihl.functionalstoragelgeacy.util.ConnectedDrawers;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
@@ -14,6 +16,7 @@ import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 
 /**
  * TileEntity for controller extension blocks.
@@ -22,7 +25,6 @@ import javax.annotation.Nullable;
  */
 public class ControllerExtensionTile extends ControllableDrawerTile {
 
-    private BlockPos linkedControllerPos;
     private final ControllerInventoryHandler inventoryHandler;
     private final ControllerFluidHandler fluidHandler;
 
@@ -32,47 +34,96 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
         this.fluidHandler = new ControllerFluidHandler();
     }
 
+    private void clearHandlers() {
+        inventoryHandler.setHandlers(Collections.emptyList());
+        fluidHandler.setHandlers(Collections.emptyList());
+    }
+
     private void refreshHandlers() {
         ConnectedDrawers drawers = getLinkedDrawers();
         inventoryHandler.setHandlers(drawers.getItemHandlers());
         fluidHandler.setHandlers(drawers.getFluidHandlers());
     }
 
-    private ConnectedDrawers getLinkedDrawers() {
-        if (linkedControllerPos != null && world != null) {
-            TileEntity te = world.getTileEntity(linkedControllerPos);
+    @Nullable
+    private StorageControllerTile getLinkedController() {
+        if (world == null) {
+            return null;
+        }
+
+        if (controllerPos != null) {
+            TileEntity te = world.getTileEntity(controllerPos);
             if (te instanceof StorageControllerTile) {
-                return ((StorageControllerTile) te).getConnectedDrawers();
+                return (StorageControllerTile) te;
+            }
+            return null;
+        }
+
+        for (EnumFacing facing : EnumFacing.VALUES) {
+            BlockPos neighborPos = pos.offset(facing);
+            TileEntity te = world.getTileEntity(neighborPos);
+            if (te instanceof StorageControllerTile) {
+                setControllerPos(neighborPos);
+                return (StorageControllerTile) te;
+            }
+            if (te instanceof ControllerExtensionTile) {
+                BlockPos neighborControllerPos = ((ControllerExtensionTile) te).getControllerPos();
+                if (neighborControllerPos != null) {
+                    TileEntity controllerTE = world.getTileEntity(neighborControllerPos);
+                    if (controllerTE instanceof StorageControllerTile) {
+                        setControllerPos(neighborControllerPos);
+                        return (StorageControllerTile) controllerTE;
+                    }
+                }
             }
         }
+
+        return null;
+    }
+
+    private ConnectedDrawers getLinkedDrawers() {
+        StorageControllerTile controller = getLinkedController();
+        if (controller != null) {
+            ConnectedDrawers drawers = controller.getConnectedDrawers();
+            drawers.setLevel(world);
+            drawers.rebuild();
+            return drawers;
+        }
         return new ConnectedDrawers();
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (world != null && !world.isRemote) {
+            if (getLinkedController() != null) {
+                refreshHandlers();
+            } else {
+                clearHandlers();
+            }
+        }
     }
 
     @Override
     public void update() {
         super.update();
         if (world != null && !world.isRemote && world.getTotalWorldTime() % 20 == 0) {
-            // Auto-find nearby controller if not linked
-            if (linkedControllerPos == null) {
-                for (EnumFacing facing : EnumFacing.VALUES) {
-                    BlockPos neighborPos = pos.offset(facing);
-                    TileEntity te = world.getTileEntity(neighborPos);
-                    if (te instanceof StorageControllerTile) {
-                        linkedControllerPos = neighborPos;
-                        markDirty();
-                        break;
-                    }
-                    if (te instanceof ControllerExtensionTile) {
-                        ControllerExtensionTile ext = (ControllerExtensionTile) te;
-                        if (ext.linkedControllerPos != null) {
-                            linkedControllerPos = ext.linkedControllerPos;
-                            markDirty();
-                            break;
-                        }
-                    }
-                }
+            if (getLinkedController() != null) {
+                refreshHandlers();
+            } else {
+                clearHandlers();
             }
         }
+    }
+
+    @Override
+    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing,
+                                   float hitX, float hitY, float hitZ, int slot) {
+        StorageControllerTile controller = getLinkedController();
+        if (controller != null) {
+            return controller.onSlotActivated(player, hand, facing, hitX, hitY, hitZ, slot);
+        }
+        return super.onSlotActivated(player, hand, facing, hitX, hitY, hitZ, slot);
     }
 
     @Override
@@ -82,7 +133,7 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
 
     @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
-        if (linkedControllerPos != null) {
+        if (controllerPos != null) {
             if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return true;
             if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) return true;
         }
@@ -92,7 +143,7 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
     @Nullable
     @Override
     public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
-        if (linkedControllerPos != null) {
+        if (controllerPos != null) {
             if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
                 return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(inventoryHandler);
             }
@@ -105,15 +156,15 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
 
     @Override
     protected void writeCustomData(NBTTagCompound nbt) {
-        if (linkedControllerPos != null) {
-            nbt.setLong("LinkedController", linkedControllerPos.toLong());
+        if (controllerPos != null) {
+            nbt.setLong("LinkedController", controllerPos.toLong());
         }
     }
 
     @Override
     protected void readCustomData(NBTTagCompound nbt) {
         if (nbt.hasKey("LinkedController")) {
-            linkedControllerPos = BlockPos.fromLong(nbt.getLong("LinkedController"));
+            controllerPos = BlockPos.fromLong(nbt.getLong("LinkedController"));
         }
     }
 
@@ -121,8 +172,8 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
     @Override
     public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
-        if (linkedControllerPos != null) {
-            compound.setLong("LinkedController", linkedControllerPos.toLong());
+        if (controllerPos != null) {
+            compound.setLong("LinkedController", controllerPos.toLong());
         }
         return compound;
     }
@@ -130,8 +181,8 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
     @Override
     public void readFromNBT(@Nonnull NBTTagCompound compound) {
         super.readFromNBT(compound);
-        if (compound.hasKey("LinkedController")) {
-            linkedControllerPos = BlockPos.fromLong(compound.getLong("LinkedController"));
+        if (compound.hasKey("LinkedController") && controllerPos == null) {
+            controllerPos = BlockPos.fromLong(compound.getLong("LinkedController"));
         }
     }
 
@@ -145,12 +196,23 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
         return 0;
     }
 
-    public void setLinkedControllerPos(BlockPos pos) {
-        this.linkedControllerPos = pos;
-        markDirty();
+    @Override
+    public void setControllerPos(BlockPos controllerPos) {
+        boolean changed = this.controllerPos == null ? controllerPos != null : !this.controllerPos.equals(controllerPos);
+        super.setControllerPos(controllerPos);
+        if (changed) {
+            refreshHandlers();
+            sendUpdatePacket();
+        }
     }
 
-    public BlockPos getLinkedControllerPos() {
-        return linkedControllerPos;
+    @Override
+    public void clearControllerPos() {
+        if (this.controllerPos == null) {
+            return;
+        }
+        super.clearControllerPos();
+        clearHandlers();
+        sendUpdatePacket();
     }
 }

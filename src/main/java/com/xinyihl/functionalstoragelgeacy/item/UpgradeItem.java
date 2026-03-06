@@ -4,6 +4,8 @@ import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
 import com.xinyihl.functionalstoragelgeacy.block.tile.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelgeacy.block.tile.FluidDrawerTile;
 import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockLiquid;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -17,9 +19,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
+import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.wrappers.BlockLiquidWrapper;
+import net.minecraftforge.fluids.capability.wrappers.FluidBlockWrapper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -294,29 +300,34 @@ public class UpgradeItem extends Item {
             }
         }
 
-        if (tile instanceof FluidDrawerTile
-                && world.getTotalWorldTime() % (FunctionalStorageConfig.UPGRADE_TICK * 3L) == 0) {
-            handleCollectorFluids((FluidDrawerTile) tile, collectPos, dir);
+        if (tile instanceof FluidDrawerTile && world.getTotalWorldTime() % (FunctionalStorageConfig.UPGRADE_TICK * 3L) == 0) {
+            handleCollectorFluids((FluidDrawerTile) tile, collectPos);
         }
     }
 
-    private void handleCollectorFluids(FluidDrawerTile tile, BlockPos collectPos, EnumFacing dir) {
-        TileEntity neighborTE = tile.getWorld().getTileEntity(collectPos);
-        if (neighborTE == null
-                || !neighborTE.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, dir.getOpposite())) {
+    private void handleCollectorFluids(FluidDrawerTile tile, BlockPos collectPos) {
+        World world = tile.getWorld();
+        Block block = world.getBlockState(collectPos).getBlock();
+
+        IFluidHandler sourceFluid;
+        if (block instanceof IFluidBlock) {
+            sourceFluid = new FluidBlockWrapper((IFluidBlock) block, world, collectPos);
+        } else if (block instanceof BlockLiquid) {
+            sourceFluid = new BlockLiquidWrapper((BlockLiquid) block, world, collectPos);
+        } else {
             return;
         }
-        IFluidHandler sourceFluid = neighborTE.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, dir.getOpposite());
-        if (sourceFluid == null) {
-            return;
-        }
-        FluidStack drained = sourceFluid.drain(FunctionalStorageConfig.UPGRADE_COLLECTOR_FLUID, false);
+
+        int requested = Math.max(FunctionalStorageConfig.UPGRADE_COLLECTOR_FLUID, Fluid.BUCKET_VOLUME);
+        FluidStack drained = sourceFluid.drain(requested, false);
         if (drained == null || drained.amount <= 0) {
             return;
         }
-        int accepted = tile.getFluidHandler().fill(drained.copy(), true);
-        if (accepted > 0) {
-            sourceFluid.drain(accepted, true);
+
+        int accepted = tile.getFluidHandler().fill(drained.copy(), false);
+        if (accepted == drained.amount) {
+            tile.getFluidHandler().fill(drained.copy(), true);
+            sourceFluid.drain(drained.amount, true);
         }
     }
 }

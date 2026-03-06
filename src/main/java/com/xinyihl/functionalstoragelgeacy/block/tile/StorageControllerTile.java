@@ -11,6 +11,8 @@ import com.xinyihl.functionalstoragelgeacy.util.ConnectedDrawers;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
@@ -25,6 +27,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,14 +40,45 @@ public class StorageControllerTile extends ControllableDrawerTile {
     private static final HashMap<UUID, Long> INTERACTION_LOGGER = new HashMap<>();
 
     private final ConnectedDrawers connectedDrawers;
+    private final List<Long> linkedExtensionPositions;
     private final ControllerInventoryHandler inventoryHandler;
     private final ControllerFluidHandler fluidHandler;
 
     public StorageControllerTile() {
         super();
         this.connectedDrawers = new ConnectedDrawers(null, this);
+        this.linkedExtensionPositions = new ArrayList<>();
         this.inventoryHandler = new ControllerInventoryHandler();
         this.fluidHandler = new ControllerFluidHandler();
+    }
+
+    private void addLinkedExtension(BlockPos position) {
+        long posLong = position.toLong();
+        if (!linkedExtensionPositions.contains(posLong)) {
+            linkedExtensionPositions.add(posLong);
+        }
+    }
+
+    private void removeLinkedExtension(BlockPos position) {
+        linkedExtensionPositions.removeIf(l -> l == position.toLong());
+    }
+
+    private NBTTagList serializeLinkedExtensions() {
+        NBTTagList list = new NBTTagList();
+        for (Long posLong : linkedExtensionPositions) {
+            list.appendTag(new NBTTagLong(posLong));
+        }
+        return list;
+    }
+
+    private void deserializeLinkedExtensions(NBTTagCompound nbt) {
+        linkedExtensionPositions.clear();
+        if (nbt.hasKey("LinkedExtensions")) {
+            NBTTagList list = nbt.getTagList("LinkedExtensions", net.minecraftforge.common.util.Constants.NBT.TAG_LONG);
+            for (int i = 0; i < list.tagCount(); i++) {
+                linkedExtensionPositions.add(((NBTTagLong) list.get(i)).getLong());
+            }
+        }
     }
 
     private void refreshHandlers() {
@@ -217,6 +251,22 @@ public class StorageControllerTile extends ControllableDrawerTile {
             }
 
             TileEntity te = world.getTileEntity(position);
+            if (te instanceof ControllerExtensionTile) {
+                removeLinkedExtension(position);
+
+                if (action == LinkingToolItem.ActionMode.ADD) {
+                    if (area.contains(new net.minecraft.util.math.Vec3d(position.getX() + 0.5, position.getY() + 0.5, position.getZ() + 0.5))) {
+                        ((ControllerExtensionTile) te).setControllerPos(this.pos);
+                        addLinkedExtension(position);
+                        didWork = true;
+                    }
+                } else {
+                    ((ControllerExtensionTile) te).clearControllerPos();
+                    didWork = true;
+                }
+                continue;
+            }
+
             if (te instanceof ControllableDrawerTile) {
                 if (action == LinkingToolItem.ActionMode.ADD) {
                     if (area.contains(new net.minecraft.util.math.Vec3d(position.getX() + 0.5, position.getY() + 0.5, position.getZ() + 0.5))) {
@@ -245,6 +295,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
     @Override
     protected void writeCustomData(NBTTagCompound nbt) {
         nbt.setTag("ConnectedDrawers", connectedDrawers.serializeNBT());
+        nbt.setTag("LinkedExtensions", serializeLinkedExtensions());
     }
 
     @Override
@@ -252,6 +303,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
         if (nbt.hasKey("ConnectedDrawers")) {
             connectedDrawers.deserializeNBT(nbt.getCompoundTag("ConnectedDrawers"));
         }
+        deserializeLinkedExtensions(nbt);
     }
 
     @Nonnull
@@ -259,6 +311,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
     public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setTag("ConnectedDrawers", connectedDrawers.serializeNBT());
+        compound.setTag("LinkedExtensions", serializeLinkedExtensions());
         return compound;
     }
 
@@ -268,6 +321,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
         if (compound.hasKey("ConnectedDrawers")) {
             connectedDrawers.deserializeNBT(compound.getCompoundTag("ConnectedDrawers"));
         }
+        deserializeLinkedExtensions(compound);
     }
 
     @Override
@@ -279,11 +333,16 @@ public class StorageControllerTile extends ControllableDrawerTile {
         return connectedDrawers;
     }
 
+    public List<Long> getLinkedExtensionPositions() {
+        return linkedExtensionPositions;
+    }
+
     /**
      * Remove a drawer from the connected list (called when drawer is broken).
      */
     public void removeConnectedDrawer(BlockPos drawerPos) {
         connectedDrawers.getConnectedDrawers().removeIf(l -> l == drawerPos.toLong());
+        removeLinkedExtension(drawerPos);
         connectedDrawers.rebuild();
         refreshHandlers();
         markDirty();

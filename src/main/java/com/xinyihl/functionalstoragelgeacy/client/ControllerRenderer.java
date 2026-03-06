@@ -1,5 +1,6 @@
 package com.xinyihl.functionalstoragelgeacy.client;
 
+import com.xinyihl.functionalstoragelgeacy.block.tile.ControllerExtensionTile;
 import com.xinyihl.functionalstoragelgeacy.block.tile.StorageControllerTile;
 import com.xinyihl.functionalstoragelgeacy.item.LinkingToolItem;
 import net.minecraft.client.Minecraft;
@@ -85,6 +86,18 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
             double dz = drawerPos.getZ() - te.getPos().getZ();
             AxisAlignedBB drawerBox = new AxisAlignedBB(dx, dy, dz, dx + 1, dy + 1, dz + 1);
             renderWireframeBox(drawerBox, 1f, 1f, 1f, 1f);
+        }
+
+        for (Long posLong : te.getLinkedExtensionPositions()) {
+            BlockPos extensionPos = BlockPos.fromLong(posLong);
+            if (!(te.getWorld().getTileEntity(extensionPos) instanceof ControllerExtensionTile)) {
+                continue;
+            }
+            double dx = extensionPos.getX() - te.getPos().getX();
+            double dy = extensionPos.getY() - te.getPos().getY();
+            double dz = extensionPos.getZ() - te.getPos().getZ();
+            AxisAlignedBB extensionBox = new AxisAlignedBB(dx, dy, dz, dx + 1, dy + 1, dz + 1);
+            renderWireframeBox(extensionBox, 1f, 1f, 1f, 1f);
         }
 
         // ---- 3. Controller range box (green wireframe + translucent green faces) ----

@@ -1,6 +1,8 @@
 package com.xinyihl.functionalstoragelgeacy.util;
 
 import com.xinyihl.functionalstoragelgeacy.block.tile.ControllableDrawerTile;
+import com.xinyihl.functionalstoragelgeacy.block.tile.ControllerExtensionTile;
+import com.xinyihl.functionalstoragelgeacy.block.tile.StorageControllerTile;
 import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -79,19 +81,22 @@ public class ConnectedDrawers {
 
         if (world == null || controllerPos == null) return;
 
-        // Rebuild handlers from stored positions
-        for (Long posLong : connectedDrawerPositions) {
+        Iterator<Long> iterator = connectedDrawerPositions.iterator();
+        while (iterator.hasNext()) {
+            Long posLong = iterator.next();
             BlockPos pos = BlockPos.fromLong(posLong);
             TileEntity te = world.getTileEntity(pos);
-            if (te instanceof ControllableDrawerTile) {
-                if (te.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null)) {
-                    IItemHandler ih = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
-                    if (ih != null) itemHandlers.add(ih);
-                }
-                if (te.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
-                    IFluidHandler fh = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null);
-                    if (fh != null) fluidHandlers.add(fh);
-                }
+            if (!isConnectableDrawer(te)) {
+                iterator.remove();
+                continue;
+            }
+            if (te.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null)) {
+                IItemHandler ih = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
+                if (ih != null) itemHandlers.add(ih);
+            }
+            if (te.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
+                IFluidHandler fh = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null);
+                if (fh != null) fluidHandlers.add(fh);
             }
         }
     }
@@ -125,7 +130,7 @@ public class ConnectedDrawers {
                 visited.add(neighbor);
 
                 TileEntity te = world.getTileEntity(neighbor);
-                if (te instanceof ControllableDrawerTile) {
+                if (isConnectableDrawer(te)) {
                     connectedDrawerPositions.add(neighbor.toLong());
 
                     if (te.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null)) {
@@ -141,6 +146,12 @@ public class ConnectedDrawers {
                 }
             }
         }
+    }
+
+    private boolean isConnectableDrawer(TileEntity te) {
+        return te instanceof ControllableDrawerTile
+                && !(te instanceof StorageControllerTile)
+                && !(te instanceof ControllerExtensionTile);
     }
 
     /**
