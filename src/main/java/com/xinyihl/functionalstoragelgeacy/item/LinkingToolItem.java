@@ -24,6 +24,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,12 +92,13 @@ public class LinkingToolItem extends Item {
     }
 
     @Override
-    public boolean hasEffect(ItemStack stack) {
+    public boolean hasEffect(@Nonnull ItemStack stack) {
         return getEnderFrequency(stack) != null;
     }
 
+    @Nonnull
     @Override
-    public EnumActionResult onItemUse(EntityPlayer player, World worldIn, BlockPos pos, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+    public EnumActionResult onItemUse(@Nonnull EntityPlayer player, World worldIn, @Nonnull BlockPos pos, @Nonnull EnumHand hand, @Nonnull EnumFacing facing, float hitX, float hitY, float hitZ) {
         if (worldIn.isRemote) return EnumActionResult.SUCCESS;
 
         ItemStack stack = player.getHeldItem(hand);
@@ -183,8 +185,9 @@ public class LinkingToolItem extends Item {
         return EnumActionResult.PASS;
     }
 
+    @Nonnull
     @Override
-    public ActionResult<ItemStack> onItemRightClick(World worldIn, EntityPlayer playerIn, EnumHand handIn) {
+    public ActionResult<ItemStack> onItemRightClick(@Nonnull World worldIn, EntityPlayer playerIn, @Nonnull EnumHand handIn) {
         ItemStack stack = playerIn.getHeldItem(handIn);
         if (!stack.isEmpty() && !worldIn.isRemote) {
             if (getEnderFrequency(stack) != null) {
@@ -217,13 +220,13 @@ public class LinkingToolItem extends Item {
     }
 
     @Override
-    public boolean canDestroyBlockInCreative(World world, BlockPos pos, ItemStack stack, EntityPlayer player) {
+    public boolean canDestroyBlockInCreative(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull ItemStack stack, @Nonnull EntityPlayer player) {
         return false;
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+    public void addInformation(@Nonnull ItemStack stack, @Nullable World worldIn, @Nonnull List<String> tooltip, @Nonnull ITooltipFlag flagIn) {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         if (getEnderFrequency(stack) != null) {
             tooltip.add(TextFormatting.GRAY + new TextComponentTranslation("linkingtool.ender.frequency").getUnformattedText() + getEnderFrequency(stack));

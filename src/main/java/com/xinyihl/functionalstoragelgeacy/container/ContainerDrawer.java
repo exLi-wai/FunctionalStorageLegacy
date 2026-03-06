@@ -9,6 +9,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
+import javax.annotation.Nonnull;
+
 /**
  * Container for drawer upgrade management GUI.
  * Shows storage upgrade slots and utility upgrade slots.
@@ -50,8 +52,9 @@ public class ContainerDrawer extends Container {
         return playerIn.getDistanceSq(tile.getPos()) <= 64;
     }
 
+    @Nonnull
     @Override
-    public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
+    public ItemStack transferStackInSlot(@Nonnull EntityPlayer playerIn, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
         Slot slot = inventorySlots.get(index);
 

@@ -19,6 +19,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
@@ -50,9 +51,10 @@ public class ConfigurationToolItem extends Item {
         stack.getTagCompound().setInteger("ConfigAction", action.ordinal());
     }
 
+    @Nonnull
     @Override
-    public EnumActionResult onItemUse(EntityPlayer player, World worldIn, BlockPos pos, EnumHand hand,
-                                      EnumFacing facing, float hitX, float hitY, float hitZ) {
+    public EnumActionResult onItemUse(@Nonnull EntityPlayer player, World worldIn, @Nonnull BlockPos pos, @Nonnull EnumHand hand,
+                                      @Nonnull EnumFacing facing, float hitX, float hitY, float hitZ) {
         if (worldIn.isRemote) return EnumActionResult.SUCCESS;
 
         ItemStack stack = player.getHeldItem(hand);
@@ -76,8 +78,9 @@ public class ConfigurationToolItem extends Item {
         return EnumActionResult.PASS;
     }
 
+    @Nonnull
     @Override
-    public ActionResult<ItemStack> onItemRightClick(World worldIn, EntityPlayer playerIn, EnumHand handIn) {
+    public ActionResult<ItemStack> onItemRightClick(@Nonnull World worldIn, EntityPlayer playerIn, @Nonnull EnumHand handIn) {
         ItemStack stack = playerIn.getHeldItem(handIn);
         if (playerIn.isSneaking()) {
             ConfigurationAction action = getAction(stack);
@@ -100,7 +103,7 @@ public class ConfigurationToolItem extends Item {
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+    public void addInformation(@Nonnull ItemStack stack, @Nullable World worldIn, @Nonnull List<String> tooltip, @Nonnull ITooltipFlag flagIn) {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         ConfigurationAction action = getAction(stack);
         tooltip.add(TextFormatting.YELLOW

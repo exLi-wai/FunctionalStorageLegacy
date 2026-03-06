@@ -186,7 +186,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
 
     // Total capacity in base items
     public double getTotalCapacity() {
-        return 64d * getMultiplier();
+        return slots == 2 ? 64 * 9d * getMultiplier() : 64 * 9d * 9 * getMultiplier();
     }
 
     // Total stored in base item units
@@ -206,10 +206,6 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
 
     public boolean isSetup() {
         return setup;
-    }
-
-    public void setSetup(boolean setup) {
-        this.setup = setup;
     }
 
     /**

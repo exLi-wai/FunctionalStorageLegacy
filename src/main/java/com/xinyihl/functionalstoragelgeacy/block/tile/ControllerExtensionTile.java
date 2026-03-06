@@ -12,6 +12,7 @@ import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -80,7 +81,7 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (linkedControllerPos != null) {
             if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return true;
             if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) return true;
@@ -90,7 +91,7 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
 
     @Nullable
     @Override
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (linkedControllerPos != null) {
             if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
                 return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(inventoryHandler);
@@ -116,8 +117,9 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         if (linkedControllerPos != null) {
             compound.setLong("LinkedController", linkedControllerPos.toLong());
@@ -126,7 +128,7 @@ public class ControllerExtensionTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         super.readFromNBT(compound);
         if (compound.hasKey("LinkedController")) {
             linkedControllerPos = BlockPos.fromLong(compound.getLong("LinkedController"));

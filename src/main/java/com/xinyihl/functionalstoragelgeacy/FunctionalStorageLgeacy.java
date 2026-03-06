@@ -30,6 +30,7 @@ import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +46,7 @@ public class FunctionalStorageLgeacy {
 
     // ====== Creative Tab ======
     public static final CreativeTabs CREATIVE_TAB = new CreativeTabs(Tags.MOD_ID) {
+        @Nonnull
         @Override
         @SideOnly(Side.CLIENT)
         public ItemStack createIcon() {

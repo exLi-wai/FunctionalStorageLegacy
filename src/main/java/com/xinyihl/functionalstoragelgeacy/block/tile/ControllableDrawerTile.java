@@ -1,7 +1,6 @@
 package com.xinyihl.functionalstoragelgeacy.block.tile;
 
 import com.xinyihl.functionalstoragelgeacy.FunctionalStorageLgeacy;
-import com.xinyihl.functionalstoragelgeacy.block.DrawerBlock;
 import com.xinyihl.functionalstoragelgeacy.config.FunctionalStorageConfig;
 import com.xinyihl.functionalstoragelgeacy.item.ConfigurationToolItem;
 import com.xinyihl.functionalstoragelgeacy.item.StorageUpgradeItem;
@@ -19,6 +18,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 
 /**
@@ -44,13 +44,13 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         this.drawerOptions = new DrawerOptions();
         this.storageUpgrades = new ItemStackHandler(getStorageUpgradesAmount()) {
             @Override
-            public boolean isItemValid(int slot, ItemStack stack) {
+            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
                 return stack.getItem() instanceof StorageUpgradeItem
                         || stack.getItem() == FunctionalStorageLgeacy.CREATIVE_VENDING_UPGRADE;
             }
 
             @Override
-            protected int getStackLimit(int slot, ItemStack stack) {
+            protected int getStackLimit(int slot, @Nonnull ItemStack stack) {
                 return 1;
             }
 
@@ -62,13 +62,13 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         };
         this.utilityUpgrades = new ItemStackHandler(getUtilityUpgradesAmount()) {
             @Override
-            public boolean isItemValid(int slot, ItemStack stack) {
+            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
                 return stack.getItem() instanceof UpgradeItem
                         && ((UpgradeItem) stack.getItem()).getType() == UpgradeItem.Type.UTILITY;
             }
 
             @Override
-            protected int getStackLimit(int slot, ItemStack stack) {
+            protected int getStackLimit(int slot, @Nonnull ItemStack stack) {
                 return 1;
             }
 
@@ -93,14 +93,16 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setTag("StorageUpgrades", storageUpgrades.serializeNBT());
         compound.setTag("UtilityUpgrades", utilityUpgrades.serializeNBT());
         compound.setTag("DrawerOptions", drawerOptions.serializeNBT());
         compound.setBoolean("IsCreative", isCreative);
         compound.setBoolean("IsVoid", isVoid);
+        compound.setBoolean("Locked", isLocked);
         if (controllerPos != null) {
             compound.setLong("ControllerPos", controllerPos.toLong());
         }
@@ -108,7 +110,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         super.readFromNBT(compound);
         if (compound.hasKey("StorageUpgrades")) {
             storageUpgrades.deserializeNBT(compound.getCompoundTag("StorageUpgrades"));
@@ -121,6 +123,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         }
         isCreative = compound.getBoolean("IsCreative");
         isVoid = compound.getBoolean("IsVoid");
+        isLocked = compound.getBoolean("Locked");
         if (compound.hasKey("ControllerPos")) {
             controllerPos = BlockPos.fromLong(compound.getLong("ControllerPos"));
         }
@@ -137,6 +140,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         nbt.setTag("DrawerOptions", drawerOptions.serializeNBT());
         nbt.setBoolean("IsCreative", isCreative);
         nbt.setBoolean("IsVoid", isVoid);
+        nbt.setBoolean("Locked", isLocked);
         writeCustomData(nbt);
         return nbt;
     }
@@ -156,6 +160,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         }
         isCreative = nbt.getBoolean("IsCreative");
         isVoid = nbt.getBoolean("IsVoid");
+        isLocked = nbt.getBoolean("Locked");
         readCustomData(nbt);
         needsUpgradeCache = true;
         markDirty();
@@ -174,8 +179,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     /**
      * Handle right-click interaction on a specific slot.
      */
-    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing,
-                                   float hitX, float hitY, float hitZ, int slot) {
+    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ, int slot) {
         ItemStack heldStack = player.getHeldItem(hand);
 
         // Skip if using configuration or linking tool
@@ -284,7 +288,6 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         this.rangeMultiplier = Math.max(rangeMult, 0f);
         this.hasIronDowngrade = iron;
         
-        isLocked = world != null && world.getBlockState(pos).getBlock() instanceof DrawerBlock && world.getBlockState(pos).getValue(DrawerBlock.LOCKED);
         needsUpgradeCache = false;
     }
 
@@ -324,14 +327,15 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     }
 
     public void setLocked(boolean locked) {
-        if (world != null && world.getBlockState(pos).getBlock() instanceof DrawerBlock) {
-            world.setBlockState(pos, world.getBlockState(pos).withProperty(DrawerBlock.LOCKED, locked), 3);
-            needsUpgradeCache = true;
-        }
+        if (this.isLocked == locked) return;
+        this.isLocked = locked;
+        this.needsUpgradeCache = true;
+        markDirty();
+        sendUpdatePacket();
     }
 
     @Override
-    public boolean shouldRefresh(World world, BlockPos pos, IBlockState oldState, IBlockState newSate) {
+    public boolean shouldRefresh(@Nonnull World world, @Nonnull BlockPos pos, IBlockState oldState, IBlockState newSate) {
         return oldState.getBlock() != newSate.getBlock();
     }
 
@@ -414,6 +418,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         }
     }
 
+    @Nonnull
     @Override
     public NBTTagCompound getUpdateTag() {
         return writeToNBT(new NBTTagCompound());
@@ -425,7 +430,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     }
 
     @Override
-    public void onDataPacket(net.minecraft.network.NetworkManager net, net.minecraft.network.play.server.SPacketUpdateTileEntity pkt) {
+    public void onDataPacket(@Nonnull net.minecraft.network.NetworkManager net, net.minecraft.network.play.server.SPacketUpdateTileEntity pkt) {
         readFromNBT(pkt.getNbtCompound());
     }
 

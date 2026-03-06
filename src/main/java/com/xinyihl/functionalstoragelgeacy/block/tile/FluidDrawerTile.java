@@ -15,6 +15,7 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -25,10 +26,6 @@ public class FluidDrawerTile extends ControllableDrawerTile {
 
     private BigFluidHandler fluidHandler;
     private DrawerType drawerType;
-
-    public FluidDrawerTile() {
-        this(DrawerType.X_1);
-    }
 
     public FluidDrawerTile(DrawerType drawerType) {
         super();
@@ -122,7 +119,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
 
     @Override
     public void setLocked(boolean locked) {
-        super.setLocked(locked);
+        if (locked == isLocked()) return;
         // Lock fluid tanks
         if (locked) {
             for (BigFluidHandler.CustomFluidTank tank : fluidHandler.getTanks()) {
@@ -135,6 +132,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
                 tank.setLockedFluid(null);
             }
         }
+        super.setLocked(locked);
     }
 
     @Override
@@ -154,8 +152,9 @@ public class FluidDrawerTile extends ControllableDrawerTile {
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setTag("FluidInv", fluidHandler.serializeNBT());
         compound.setInteger("DrawerType", drawerType.ordinal());
@@ -163,7 +162,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         if (compound.hasKey("DrawerType")) {
             drawerType = DrawerType.values()[compound.getInteger("DrawerType")];
         }
@@ -180,14 +179,14 @@ public class FluidDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) return true;
         return super.hasCapability(capability, facing);
     }
 
     @Nullable
     @Override
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
             return CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY.cast(fluidHandler);
         }

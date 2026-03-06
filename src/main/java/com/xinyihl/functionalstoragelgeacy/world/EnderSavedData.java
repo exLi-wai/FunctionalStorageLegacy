@@ -6,6 +6,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.storage.MapStorage;
 import net.minecraft.world.storage.WorldSavedData;
 
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,10 +23,6 @@ public class EnderSavedData extends WorldSavedData {
 
     public EnderSavedData() {
         super(DATA_NAME);
-    }
-
-    public EnderSavedData(String name) {
-        super(name);
     }
 
     public static EnderSavedData getInstance(World world) {
@@ -73,8 +70,9 @@ public class EnderSavedData extends WorldSavedData {
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound nbt) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound nbt) {
         int i = 0;
         for (Map.Entry<String, EnderInventoryHandler> entry : frequencyMap.entrySet()) {
             nbt.setString("Freq_" + i, entry.getKey());

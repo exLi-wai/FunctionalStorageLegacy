@@ -16,6 +16,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.opengl.GL11;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -32,7 +33,7 @@ import java.util.List;
 public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControllerTile> {
 
     @Override
-    public void render(StorageControllerTile te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void render(@Nonnull StorageControllerTile te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         if (te == null || te.getWorld() == null) return;
 
         Minecraft mc = Minecraft.getMinecraft();
@@ -105,7 +106,7 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<StorageControl
     }
 
     @Override
-    public boolean isGlobalRenderer(StorageControllerTile te) {
+    public boolean isGlobalRenderer(@Nonnull StorageControllerTile te) {
         return true;
     }
 

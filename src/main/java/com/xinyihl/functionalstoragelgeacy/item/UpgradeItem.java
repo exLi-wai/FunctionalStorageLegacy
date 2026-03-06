@@ -26,6 +26,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -94,8 +95,9 @@ public class UpgradeItem extends Item {
         stack.getTagCompound().setInteger("Direction", facing.getIndex());
     }
 
+    @Nonnull
     @Override
-    public ActionResult<ItemStack> onItemRightClick(World worldIn, EntityPlayer playerIn, EnumHand handIn) {
+    public ActionResult<ItemStack> onItemRightClick(@Nonnull World worldIn, EntityPlayer playerIn, @Nonnull EnumHand handIn) {
         ItemStack stack = playerIn.getHeldItem(handIn);
         if (isDirectionalUtility() && playerIn.isSneaking()) {
             EnumFacing current = getDirection(stack);
@@ -117,7 +119,7 @@ public class UpgradeItem extends Item {
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void addInformation(ItemStack stack, World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+    public void addInformation(@Nonnull ItemStack stack, World worldIn, @Nonnull List<String> tooltip, @Nonnull ITooltipFlag flagIn) {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         if (isDirectionalUtility()) {
             EnumFacing direction = getDirection(stack);

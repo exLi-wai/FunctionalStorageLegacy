@@ -10,6 +10,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -19,7 +20,7 @@ import javax.annotation.Nullable;
  */
 public class ArmoryCabinetTile extends TileEntity {
 
-    private ArmoryCabinetInventoryHandler handler;
+    private final ArmoryCabinetInventoryHandler handler;
 
     public ArmoryCabinetTile() {
         this.handler = new ArmoryCabinetInventoryHandler() {
@@ -34,15 +35,16 @@ public class ArmoryCabinetTile extends TileEntity {
         return handler;
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setTag("Inventory", handler.serializeNBT());
         return compound;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         super.readFromNBT(compound);
         if (compound.hasKey("Inventory")) {
             handler.deserializeNBT(compound.getCompoundTag("Inventory"));
@@ -78,20 +80,21 @@ public class ArmoryCabinetTile extends TileEntity {
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return true;
         return super.hasCapability(capability, facing);
     }
 
     @Nullable
     @Override
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
             return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(handler);
         }
         return super.getCapability(capability, facing);
     }
 
+    @Nonnull
     @Override
     public NBTTagCompound getUpdateTag() {
         return writeToNBT(new NBTTagCompound());
@@ -103,7 +106,7 @@ public class ArmoryCabinetTile extends TileEntity {
     }
 
     @Override
-    public void onDataPacket(NetworkManager net, SPacketUpdateTileEntity pkt) {
+    public void onDataPacket(@Nonnull NetworkManager net, SPacketUpdateTileEntity pkt) {
         readFromNBT(pkt.getNbtCompound());
     }
 }

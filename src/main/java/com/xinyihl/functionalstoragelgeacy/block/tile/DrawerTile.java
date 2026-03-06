@@ -13,6 +13,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.UUID;
@@ -29,11 +30,6 @@ public class DrawerTile extends ControllableDrawerTile {
     private DrawerType drawerType;
     private DrawerWoodType woodType;
     private int removeTicks = 0;
-
-    public DrawerTile() {
-        // Required for deserialization
-        this(DrawerType.X_1, DrawerWoodType.OAK);
-    }
 
     public DrawerTile(DrawerType drawerType, DrawerWoodType woodType) {
         super();
@@ -164,8 +160,9 @@ public class DrawerTile extends ControllableDrawerTile {
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setTag("Inventory", handler.serializeNBT());
         compound.setInteger("DrawerType", drawerType.ordinal());
@@ -174,7 +171,7 @@ public class DrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         if (compound.hasKey("DrawerType")) {
             drawerType = DrawerType.values()[compound.getInteger("DrawerType")];
         }
@@ -194,14 +191,14 @@ public class DrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return true;
         return super.hasCapability(capability, facing);
     }
 
     @Nullable
     @Override
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
             return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(handler);
         }

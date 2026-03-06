@@ -21,6 +21,7 @@ import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -143,7 +144,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return true;
         if (capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) return true;
         return super.hasCapability(capability, facing);
@@ -151,7 +152,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
 
     @Nullable
     @Override
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
             return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(inventoryHandler);
         }
@@ -253,15 +254,16 @@ public class StorageControllerTile extends ControllableDrawerTile {
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setTag("ConnectedDrawers", connectedDrawers.serializeNBT());
         return compound;
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         super.readFromNBT(compound);
         if (compound.hasKey("ConnectedDrawers")) {
             connectedDrawers.deserializeNBT(compound.getCompoundTag("ConnectedDrawers"));
@@ -288,6 +290,7 @@ public class StorageControllerTile extends ControllableDrawerTile {
         sendUpdatePacket();
     }
 
+    @Nonnull
     @Override
     public AxisAlignedBB getRenderBoundingBox() {
         return TileEntity.INFINITE_EXTENT_AABB;

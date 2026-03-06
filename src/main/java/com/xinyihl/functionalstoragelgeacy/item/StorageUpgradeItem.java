@@ -9,6 +9,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
@@ -30,13 +31,13 @@ public class StorageUpgradeItem extends UpgradeItem {
     }
 
     @Override
-    public boolean hasEffect(ItemStack stack) {
+    public boolean hasEffect(@Nonnull ItemStack stack) {
         return tier == StorageTier.NETHERITE;
     }
 
     @SideOnly(Side.CLIENT)
     @Override
-    public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+    public void addInformation(@Nonnull ItemStack stack, @Nullable World worldIn, @Nonnull List<String> tooltip, @Nonnull ITooltipFlag flagIn) {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         if (tier == StorageTier.IRON) {
             tooltip.add(TextFormatting.GRAY + new TextComponentTranslation("item.functionalstoragelgeacy.iron_downgrade.desc").getUnformattedText());

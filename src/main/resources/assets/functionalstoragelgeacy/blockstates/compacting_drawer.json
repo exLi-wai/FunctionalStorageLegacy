@@ -1,12 +1,57 @@
 {
   "variants": {
-    "facing=north,locked=false": { "model": "functionalstoragelgeacy:compacting_drawer" },
-    "facing=south,locked=false": { "model": "functionalstoragelgeacy:compacting_drawer", "y": 180 },
-    "facing=west,locked=false": { "model": "functionalstoragelgeacy:compacting_drawer", "y": 270 },
-    "facing=east,locked=false": { "model": "functionalstoragelgeacy:compacting_drawer", "y": 90 },
-    "facing=north,locked=true": { "model": "functionalstoragelgeacy:compacting_drawer" },
-    "facing=south,locked=true": { "model": "functionalstoragelgeacy:compacting_drawer", "y": 180 },
-    "facing=west,locked=true": { "model": "functionalstoragelgeacy:compacting_drawer", "y": 270 },
-    "facing=east,locked=true": { "model": "functionalstoragelgeacy:compacting_drawer", "y": 90 }
+    "attachment=wall,horizontal_facing=north": {
+      "model": "functionalstoragelgeacy:compacting_drawer"
+    },
+    "attachment=wall,horizontal_facing=south": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "y": 180
+    },
+    "attachment=wall,horizontal_facing=west": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "y": 270
+    },
+    "attachment=wall,horizontal_facing=east": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "y": 90
+    },
+    "attachment=floor,horizontal_facing=north": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 270
+    },
+    "attachment=floor,horizontal_facing=east": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 270,
+      "y": 90
+    },
+    "attachment=floor,horizontal_facing=south": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 270,
+      "y": 180
+    },
+    "attachment=floor,horizontal_facing=west": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 270,
+      "y": 270
+    },
+    "attachment=ceiling,horizontal_facing=north": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 90
+    },
+    "attachment=ceiling,horizontal_facing=east": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 90,
+      "y": 90
+    },
+    "attachment=ceiling,horizontal_facing=south": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 90,
+      "y": 180
+    },
+    "attachment=ceiling,horizontal_facing=west": {
+      "model": "functionalstoragelgeacy:compacting_drawer",
+      "x": 90,
+      "y": 270
+    }
   }
 }

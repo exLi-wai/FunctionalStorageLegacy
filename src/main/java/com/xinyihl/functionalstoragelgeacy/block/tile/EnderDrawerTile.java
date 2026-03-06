@@ -12,6 +12,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.UUID;
@@ -52,7 +53,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void setWorld(net.minecraft.world.World worldIn) {
+    public void setWorld(@Nonnull net.minecraft.world.World worldIn) {
         super.setWorld(worldIn);
         if (worldIn != null && !worldIn.isRemote) {
             this.storage = EnderSavedData.getInstance(worldIn).getFrequency(this.frequency);
@@ -141,13 +142,15 @@ public class EnderDrawerTile extends ControllableDrawerTile {
         }
     }
 
+    @Nonnull
     @Override
-    public NBTTagCompound writeToNBT(NBTTagCompound compound) {
+    public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
         compound.setString("Frequency", frequency);
         return compound;
     }
 
+    @Nonnull
     @Override
     public NBTTagCompound getUpdateTag() {
         NBTTagCompound tag = super.getUpdateTag();
@@ -158,7 +161,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void onDataPacket(net.minecraft.network.NetworkManager net, net.minecraft.network.play.server.SPacketUpdateTileEntity pkt) {
+    public void onDataPacket(@Nonnull net.minecraft.network.NetworkManager net, net.minecraft.network.play.server.SPacketUpdateTileEntity pkt) {
         super.onDataPacket(net, pkt);
         NBTTagCompound nbt = pkt.getNbtCompound();
         if (nbt.hasKey("EnderInventory")) {
@@ -175,7 +178,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound compound) {
+    public void readFromNBT(@Nonnull NBTTagCompound compound) {
         if (compound.hasKey("Frequency")) {
             this.frequency = compound.getString("Frequency");
         }
@@ -188,14 +191,14 @@ public class EnderDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public boolean hasCapability(Capability<?> capability, @Nullable EnumFacing facing) {
+    public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && storage != null) return true;
         return super.hasCapability(capability, facing);
     }
 
     @Nullable
     @Override
-    public <T> T getCapability(Capability<T> capability, @Nullable EnumFacing facing) {
+    public <T> T getCapability(@Nonnull Capability<T> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && storage != null) {
             return CapabilityItemHandler.ITEM_HANDLER_CAPABILITY.cast(storage);
         }

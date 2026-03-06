@@ -9,6 +9,7 @@ import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -282,6 +283,7 @@ public class CompactingUtil {
             return true;
         }
 
+        @Nonnull
         @Override
         public ItemStack getStackInSlot(int index) {
             if (index < 0 || index >= size) return ItemStack.EMPTY;
@@ -289,12 +291,13 @@ public class CompactingUtil {
         }
 
         @Override
-        public void setInventorySlotContents(int index, ItemStack stack) {
+        public void setInventorySlotContents(int index, @Nonnull ItemStack stack) {
             if (index >= 0 && index < size) {
                 items.set(index, stack);
             }
         }
 
+        @Nonnull
         @Override
         public ItemStack removeStackFromSlot(int index) {
             ItemStack stack = items.get(index);
@@ -302,6 +305,7 @@ public class CompactingUtil {
             return stack;
         }
 
+        @Nonnull
         @Override
         public ItemStack decrStackSize(int index, int count) {
             ItemStack stack = items.get(index);

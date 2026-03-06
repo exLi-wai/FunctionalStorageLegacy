@@ -23,6 +23,8 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.items.IItemHandler;
 
+import javax.annotation.Nonnull;
+
 /**
  * TileEntity Special Renderer for drawing item/fluid icons and counts on drawer faces.
  * Handles all drawer types: standard (X_1/X_2/X_4), compacting, simple compacting, ender, and fluid.
@@ -34,7 +36,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     private static final ResourceLocation LOCK_TEXTURE = new ResourceLocation("functionalstoragelgeacy", "textures/blocks/lock.png");
 
     private static final float Z_OFFSET_STACK = 0.97F;
-    private static final float Z_OFFSET_COUNT = 0.971F;
+    private static final float Z_OFFSET_COUNT = 0.975F;
     private static final float Z_OFFSET_FLUID = 0.96F;
     private static final float Z_OFFSET_INDICATOR = 1.002F;
     private static final float Z_OFFSET_UPGRADE = 1.005F;
@@ -44,7 +46,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // Standard drawers
     // ============================================================
     @Override
-    public void render(ControllableDrawerTile te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
+    public void render(@Nonnull ControllableDrawerTile te, double x, double y, double z, float partialTicks, int destroyStage, float alpha) {
         if (te == null || te.getWorld() == null) return;
 
         // Distance check using client config render range
@@ -56,18 +58,20 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         if (!(state.getBlock() instanceof DrawerBlock)) return;
 
         DrawerBlock block = (DrawerBlock) state.getBlock();
-        EnumFacing facing = state.getValue(DrawerBlock.FACING);
+        DrawerBlock.Attachment attachment = DrawerBlock.getAttachment(state);
+        EnumFacing horizontalFacing = DrawerBlock.getHorizontalFacing(state);
+        EnumFacing frontFacing = DrawerBlock.getFrontFacing(state);
         ControllableDrawerTile.DrawerOptions options = te.getDrawerOptions();
 
         GlStateManager.pushMatrix();
         GlStateManager.translate(x, y, z);
 
-        int ambLight = te.getWorld().getCombinedLight(te.getPos().offset(facing), 0);
+        int ambLight = te.getWorld().getCombinedLight(te.getPos().offset(frontFacing), 0);
         int lu = ambLight % 65536;
         int lv = ambLight / 65536;
         OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, (float) lu, (float) lv);
 
-        setupFaceTransform(facing);
+        setupFaceTransform(attachment, horizontalFacing);
 
         if (te instanceof FluidDrawerTile) {
             renderFluidSlots((FluidDrawerTile) te, block.getDrawerType(), options);
@@ -186,7 +190,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
             renderStackOnFace(stack, posX, posY, 0.5F, 1.001F);
         }
         if (showCount) {
-            renderCountOnFace(count, posX, posY, 0.5F, 0.2F, 1.001F);
+            renderCountOnFace(count, posX, posY, 0.5F, 0.2F, 1.005F);
         }
     }
 
@@ -262,26 +266,38 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Face transformation
     // ============================================================
-    private void setupFaceTransform(EnumFacing facing) {
+    private void setupFaceTransform(DrawerBlock.Attachment attachment, EnumFacing horizontalFacing) {
         GlStateManager.translate(0.5F, 0.5F, 0.5F);
-        float rotY = 0;
-        switch (facing) {
+
+        int rotY;
+        switch (horizontalFacing) {
             case NORTH:
                 rotY = 180;
-                break;
-            case SOUTH:
-                rotY = 0;
-                break;
-            case WEST:
-                rotY = 270;
                 break;
             case EAST:
                 rotY = 90;
                 break;
+            case WEST:
+                rotY = 270;
+                break;
+            case SOUTH:
             default:
+                rotY = 0;
                 break;
         }
         GlStateManager.rotate(rotY, 0, 1, 0);
+
+        switch (attachment) {
+            case FLOOR:
+                GlStateManager.rotate(-90, 1, 0, 0);
+                break;
+            case CEILING:
+                GlStateManager.rotate(90, 1, 0, 0);
+                break;
+            case WALL:
+            default:
+                break;
+        }
         GlStateManager.translate(-0.5F, -0.5F, -0.5F);
     }
 
@@ -431,7 +447,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
 
         float offsetX = posX * 16.0f;
         float cY = posY * 16.0f;
-        float size = (slotScale >= 1.0f) ? 0.5f : 0.25f;
+        float size = (slotScale >= 1.0f) ? 1f : 0.25f;
 
         float offsetY = 16.0f - cY + 4.0f * size; // shift down
 
@@ -452,7 +468,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
         GlStateManager.depthMask(false);
 
-        fontRenderer.drawString(text, -textWidth / 2F, 4, 0xFFFFFFFF, true);
+        fontRenderer.drawString(text, -textWidth / 2F, 2F, 0xFFFFFFFF, true);
 
         GlStateManager.depthMask(true);
         GlStateManager.disableBlend();
