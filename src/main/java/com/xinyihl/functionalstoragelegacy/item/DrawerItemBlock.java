@@ -2,11 +2,13 @@ package com.xinyihl.functionalstoragelegacy.item;
 
 import com.xinyihl.functionalstoragelegacy.DrawerType;
 import com.xinyihl.functionalstoragelegacy.block.CompactingDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.block.FluidDrawerBlock;
 import com.xinyihl.functionalstoragelegacy.block.SimpleCompactingDrawerBlock;
 import com.xinyihl.functionalstoragelegacy.block.WoodDrawerBlock;
 import com.xinyihl.functionalstoragelegacy.inventory.item.CompactingStackItemHandler;
 import com.xinyihl.functionalstoragelegacy.inventory.item.DrawerStackCapabilityProvider;
 import com.xinyihl.functionalstoragelegacy.inventory.item.DrawerStackItemHandler;
+import com.xinyihl.functionalstoragelegacy.inventory.item.FluidDrawerStackItemHandler;
 import net.minecraft.block.Block;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemBlock;
@@ -17,6 +19,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
@@ -37,8 +40,12 @@ public class DrawerItemBlock extends ItemBlock {
     @Nullable
     @Override
     public ICapabilityProvider initCapabilities(@Nonnull ItemStack stack, @Nullable NBTTagCompound nbt) {
-        IItemHandler handler = createItemHandler(stack);
-        return handler == null ? null : new DrawerStackCapabilityProvider(handler);
+        IItemHandler itemHandler = createItemHandler(stack);
+        IFluidHandlerItem fluidHandler = createFluidItemHandler(stack);
+        if (itemHandler == null && fluidHandler == null) {
+            return null;
+        }
+        return new DrawerStackCapabilityProvider(itemHandler, fluidHandler);
     }
 
     @SideOnly(Side.CLIENT)
@@ -139,6 +146,15 @@ public class DrawerItemBlock extends ItemBlock {
         }
         if (block instanceof SimpleCompactingDrawerBlock) {
             return new CompactingStackItemHandler(stack, 2);
+        }
+        return null;
+    }
+
+    @Nullable
+    private IFluidHandlerItem createFluidItemHandler(ItemStack stack) {
+        if (block instanceof FluidDrawerBlock) {
+            DrawerType drawerType = ((FluidDrawerBlock) block).getDrawerType();
+            return new FluidDrawerStackItemHandler(stack, drawerType);
         }
         return null;
     }
