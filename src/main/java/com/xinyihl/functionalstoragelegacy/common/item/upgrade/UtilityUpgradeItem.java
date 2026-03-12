@@ -14,6 +14,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
@@ -182,7 +183,8 @@ public class UtilityUpgradeItem extends UpgradeItem {
         }
 
         if (isDirectionalUtility() && playerIn.isSneaking()) {
-            EnumFacing next = playerIn.getHorizontalFacing();
+            Vec3d lookVec = playerIn.getLookVec();
+            EnumFacing next = EnumFacing.getFacingFromVector((float) -lookVec.x, (float) -lookVec.y, (float) -lookVec.z).getOpposite();
             setDirection(stack, next);
 
             if (!worldIn.isRemote) {
