@@ -1,9 +1,9 @@
 package com.xinyihl.functionalstoragelegacy.util;
 
-import com.xinyihl.functionalstoragelegacy.block.tile.ControllableDrawerTile;
-import com.xinyihl.functionalstoragelegacy.block.tile.ControllerExtensionTile;
-import com.xinyihl.functionalstoragelegacy.block.tile.StorageControllerTile;
-import com.xinyihl.functionalstoragelegacy.config.FunctionalStorageConfig;
+import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.controller.ControllerExtensionTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.controller.DrawerControllerTile;
+import com.xinyihl.functionalstoragelegacy.misc.FunctionalStorageConfig;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagLong;
@@ -150,7 +150,7 @@ public class ConnectedDrawers {
 
     private boolean isConnectableDrawer(TileEntity te) {
         return te instanceof ControllableDrawerTile
-                && !(te instanceof StorageControllerTile)
+                && !(te instanceof DrawerControllerTile)
                 && !(te instanceof ControllerExtensionTile);
     }
 

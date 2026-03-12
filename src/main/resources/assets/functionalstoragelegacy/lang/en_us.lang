@@ -50,6 +50,8 @@ item.functionalstoragelegacy.redstone_upgrade.name=Redstone Upgrade
 item.functionalstoragelegacy.pulling_upgrade.name=Pulling Upgrade
 item.functionalstoragelegacy.pushing_upgrade.name=Pushing Upgrade
 item.functionalstoragelegacy.collector_upgrade.name=Collector Upgrade
+item.functionalstoragelegacy.wireless_pulling_upgrade.name=Wireless Pulling Upgrade
+item.functionalstoragelegacy.wireless_pushing_upgrade.name=Wireless Pushing Upgrade
 
 # Tools
 item.functionalstoragelegacy.configuration_tool.name=Configuration Tool
@@ -59,7 +61,7 @@ item.functionalstoragelegacy.linking_tool.name=Linking Tool
 item.functionalstoragelegacy.iron_downgrade.desc=Reduces drawer storage capacity
 item.functionalstoragelegacy.storage_upgrade.multiplier=Storage Multiplier: %s
 item.functionalstoragelegacy.upgrade.direction=Direction:
-item.functionalstoragelegacy.upgrade.direction.use=Sneak + right-click to cycle direction.
+item.functionalstoragelegacy.upgrade.direction.use=Sneak + right-click in air to set to your facing direction.
 item.functionalstoragelegacy.upgrade.direction.swapped=Direction changed to %s
 item.functionalstoragelegacy.upgrade.direction.down=Down
 item.functionalstoragelegacy.upgrade.direction.up=Up
@@ -67,6 +69,13 @@ item.functionalstoragelegacy.upgrade.direction.north=North
 item.functionalstoragelegacy.upgrade.direction.south=South
 item.functionalstoragelegacy.upgrade.direction.west=West
 item.functionalstoragelegacy.upgrade.direction.east=East
+item.functionalstoragelegacy.upgrade.wireless.target=Target: %s: %s
+item.functionalstoragelegacy.upgrade.wireless.target_pos=Pos: %s, %s, %s
+item.functionalstoragelegacy.upgrade.wireless.use=Sneak + right-click a block face to bind target.
+item.functionalstoragelegacy.upgrade.wireless.clear=Sneak + right-click in air to clear target.
+item.functionalstoragelegacy.upgrade.wireless.no_target=No wireless target bound.
+item.functionalstoragelegacy.upgrade.wireless.bound=Bound %s: %s (%s, %s, %s)
+item.functionalstoragelegacy.upgrade.wireless.cleared=Wireless target cleared.
 item.functionalstoragelegacy.generation_upgrade.rate=Generation Rate:
 
 # Linking Tool Messages

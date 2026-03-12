@@ -1,6 +1,6 @@
 package com.xinyihl.functionalstoragelegacy.client.gui;
 
-import com.xinyihl.functionalstoragelegacy.fluid.BigFluidHandler;
+import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
 import com.xinyihl.functionalstoragelegacy.util.NumberUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;

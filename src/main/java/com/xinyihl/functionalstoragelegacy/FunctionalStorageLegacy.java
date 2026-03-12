@@ -1,23 +1,38 @@
 package com.xinyihl.functionalstoragelegacy;
 
-import com.xinyihl.functionalstoragelegacy.block.*;
-import com.xinyihl.functionalstoragelegacy.block.tile.ControllableDrawerTile;
-import com.xinyihl.functionalstoragelegacy.compat.top.TheOneProbeCompat;
-import com.xinyihl.functionalstoragelegacy.config.FunctionalStorageConfig;
-import com.xinyihl.functionalstoragelegacy.item.*;
-import com.xinyihl.functionalstoragelegacy.item.GenerationUpgrade.*;
-import com.xinyihl.functionalstoragelegacy.network.NetworkHandler;
-import com.xinyihl.functionalstoragelegacy.proxy.CommonProxy;
-import com.xinyihl.functionalstoragelegacy.recipe.FunctionalStorageRecipes;
-import com.xinyihl.functionalstoragelegacy.util.DrawerWoodType;
+import com.xinyihl.functionalstoragelegacy.api.DrawerType;
+import com.xinyihl.functionalstoragelegacy.api.DrawerWoodType;
+import com.xinyihl.functionalstoragelegacy.common.block.ArmoryCabinetBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.EnderDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.FluidDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.WoodDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.base.DrawerBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.compact.CompactingDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.compact.SimpleCompactingDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.controller.ControllerExtensionBlock;
+import com.xinyihl.functionalstoragelegacy.common.block.controller.DrawerControllerBlock;
+import com.xinyihl.functionalstoragelegacy.common.integration.top.TheOneProbeCompat;
+import com.xinyihl.functionalstoragelegacy.common.item.ConfigurationToolItem;
+import com.xinyihl.functionalstoragelegacy.common.item.DrawerItemBlock;
+import com.xinyihl.functionalstoragelegacy.common.item.LinkingToolItem;
+import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StoneGenerationUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StorageUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UtilityUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.network.NetworkHandler;
+import com.xinyihl.functionalstoragelegacy.common.recipe.FunctionalStorageRecipes;
+import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
+import com.xinyihl.functionalstoragelegacy.misc.CommonProxy;
+import com.xinyihl.functionalstoragelegacy.misc.FunctionalStorageConfig;
+import com.xinyihl.functionalstoragelegacy.misc.GuiHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
-import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -32,7 +47,6 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.minecraftforge.registries.IForgeRegistry;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -77,11 +91,13 @@ public class FunctionalStorageLegacy {
     public static Item CREATIVE_VENDING_UPGRADE;
 
     // Utility Upgrades
-    public static UpgradeItem VOID_UPGRADE;
-    public static UpgradeItem REDSTONE_UPGRADE;
-    public static UpgradeItem PULLING_UPGRADE;
-    public static UpgradeItem PUSHING_UPGRADE;
-    public static UpgradeItem COLLECTOR_UPGRADE;
+    public static UtilityUpgradeItem VOID_UPGRADE;
+    public static UtilityUpgradeItem REDSTONE_UPGRADE;
+    public static UtilityUpgradeItem PULLING_UPGRADE;
+    public static UtilityUpgradeItem PUSHING_UPGRADE;
+    public static UtilityUpgradeItem COLLECTOR_UPGRADE;
+    public static UtilityUpgradeItem WIRELESS_PULLING_UPGRADE;
+    public static UtilityUpgradeItem WIRELESS_PUSHING_UPGRADE;
     public static StoneGenerationUpgradeItem STONE_GENERATION_UPGRADE_BASIC;
     public static StoneGenerationUpgradeItem STONE_GENERATION_UPGRADE_ADVANCED;
     public static StoneGenerationUpgradeItem STONE_GENERATION_UPGRADE_REINFORCED;
@@ -187,7 +203,8 @@ public class FunctionalStorageLegacy {
             NETHERITE_UPGRADE.setRegistryName("netherite_upgrade");
             NETHERITE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".netherite_upgrade");
 
-            CREATIVE_VENDING_UPGRADE = new UpgradeItem(UpgradeItem.Type.STORAGE)
+            CREATIVE_VENDING_UPGRADE = new UpgradeItem(UpgradeItem.Type.STORAGE) {
+            }
                     .setRegistryName("creative_vending_upgrade")
                     .setTranslationKey(Tags.MOD_ID + ".creative_vending_upgrade")
                     .setMaxStackSize(1)
@@ -210,26 +227,34 @@ public class FunctionalStorageLegacy {
             STONE_GENERATION_UPGRADE_MAGICAL.setRegistryName("stone_generation_upgrade_t4");
             STONE_GENERATION_UPGRADE_MAGICAL.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t4");
             // Utility Upgrades
-            VOID_UPGRADE = new UpgradeItem(UpgradeItem.Type.UTILITY, UpgradeItem.UtilityAction.VOID);
+            VOID_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.VOID);
             VOID_UPGRADE.setRegistryName("void_upgrade");
             VOID_UPGRADE.setTranslationKey(Tags.MOD_ID + ".void_upgrade");
             VOID_UPGRADE.incompatibleWith(VOID_UPGRADE);
 
-            REDSTONE_UPGRADE = new UpgradeItem(UpgradeItem.Type.UTILITY, UpgradeItem.UtilityAction.REDSTONE);
+            REDSTONE_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.REDSTONE);
             REDSTONE_UPGRADE.setRegistryName("redstone_upgrade");
             REDSTONE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".redstone_upgrade");
 
-            PULLING_UPGRADE = new UpgradeItem(UpgradeItem.Type.UTILITY, UpgradeItem.UtilityAction.PULLING);
+            PULLING_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.PULLING);
             PULLING_UPGRADE.setRegistryName("pulling_upgrade");
             PULLING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".pulling_upgrade");
 
-            PUSHING_UPGRADE = new UpgradeItem(UpgradeItem.Type.UTILITY, UpgradeItem.UtilityAction.PUSHING);
+            PUSHING_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.PUSHING);
             PUSHING_UPGRADE.setRegistryName("pushing_upgrade");
             PUSHING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".pushing_upgrade");
 
-            COLLECTOR_UPGRADE = new UpgradeItem(UpgradeItem.Type.UTILITY, UpgradeItem.UtilityAction.COLLECTOR);
+            COLLECTOR_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.COLLECTOR);
             COLLECTOR_UPGRADE.setRegistryName("collector_upgrade");
             COLLECTOR_UPGRADE.setTranslationKey(Tags.MOD_ID + ".collector_upgrade");
+
+            WIRELESS_PULLING_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.WIRELESS_PULLING);
+            WIRELESS_PULLING_UPGRADE.setRegistryName("wireless_pulling_upgrade");
+            WIRELESS_PULLING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".wireless_pulling_upgrade");
+
+            WIRELESS_PUSHING_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.WIRELESS_PUSHING);
+            WIRELESS_PUSHING_UPGRADE.setRegistryName("wireless_pushing_upgrade");
+            WIRELESS_PUSHING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".wireless_pushing_upgrade");
 
             // Tools
             CONFIGURATION_TOOL = new ConfigurationToolItem();
@@ -252,6 +277,8 @@ public class FunctionalStorageLegacy {
                     PULLING_UPGRADE,
                     PUSHING_UPGRADE,
                     COLLECTOR_UPGRADE,
+                    WIRELESS_PULLING_UPGRADE,
+                    WIRELESS_PUSHING_UPGRADE,
                     CONFIGURATION_TOOL,
                     LINKING_TOOL,
                     STONE_GENERATION_UPGRADE_BASIC,

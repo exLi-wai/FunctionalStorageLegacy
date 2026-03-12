@@ -1,16 +1,23 @@
 package com.xinyihl.functionalstoragelegacy.client.gui;
 
-import com.xinyihl.functionalstoragelegacy.DrawerType;
 import com.xinyihl.functionalstoragelegacy.Tags;
-import com.xinyihl.functionalstoragelegacy.block.tile.*;
-import com.xinyihl.functionalstoragelegacy.container.ContainerDrawer;
-import com.xinyihl.functionalstoragelegacy.fluid.BigFluidHandler;
-import com.xinyihl.functionalstoragelegacy.inventory.BigInventoryHandler;
-import com.xinyihl.functionalstoragelegacy.inventory.CompactingInventoryHandler;
-import com.xinyihl.functionalstoragelegacy.item.StorageUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.api.DrawerType;
+import com.xinyihl.functionalstoragelegacy.common.container.ContainerDrawer;
+import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
+import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StorageUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UtilityUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.tile.EnderDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.FluidDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.WoodDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.compact.CompactingDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.compact.SimpleCompactingDrawerTile;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import org.apache.commons.lang3.tuple.Pair;
@@ -43,12 +50,12 @@ public class GuiDrawer extends GuiContainer {
     private void initInfoAddon() {
         ControllableDrawerTile tile = container.getTile();
 
-        if (tile instanceof DrawerTile) {
-            DrawerTile drawerTile = (DrawerTile) tile;
-            DrawerType type = drawerTile.getDrawerType();
-            BigInventoryHandler handler = drawerTile.getHandler();
+        if (tile instanceof WoodDrawerTile) {
+            WoodDrawerTile woodDrawerTile = (WoodDrawerTile) tile;
+            DrawerType type = woodDrawerTile.getDrawerType();
+            BigInventoryHandler handler = woodDrawerTile.getHandler();
             ResourceLocation frontTexture = new ResourceLocation(Tags.MOD_ID,
-                    "textures/blocks/" + drawerTile.getWoodType().getName() + "_front_" + type.getSlots() + ".png");
+                    "textures/blocks/" + woodDrawerTile.getWoodType().getName() + "_front_" + type.getSlots() + ".png");
             itemInfoAddon = new DrawerInfoGuiAddon(
                     INFO_PANEL_X, INFO_PANEL_Y,
                     frontTexture,
@@ -65,7 +72,7 @@ public class GuiDrawer extends GuiContainer {
                     },
                     i -> handler.getSlotLimit(i),
                     i -> {
-                        if (drawerTile.isLocked()) {
+                        if (woodDrawerTile.isLocked()) {
                             BigInventoryHandler.BigStack bs = handler.getBigStack(i);
                             if (!bs.getStack().isEmpty()) {
                                 ItemStack locked = bs.getStack().copy();
@@ -205,7 +212,7 @@ public class GuiDrawer extends GuiContainer {
 
     @Override
     protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
-        drawStorageUpgradeOverlays();
+        drawUpgradeOverlays();
 
         String title = container.getTile().getDisplayName() != null
                 ? container.getTile().getDisplayName().getUnformattedText()
@@ -231,12 +238,14 @@ public class GuiDrawer extends GuiContainer {
         this.renderHoveredToolTip(mouseX, mouseY);
     }
 
-    private void drawStorageUpgradeOverlays() {
+    private void drawUpgradeOverlays() {
         int storageSlots = container.getTile().getStorageUpgrades().getSlots();
-        ItemStack carriedStack = mc.player == null ? ItemStack.EMPTY : mc.player.inventory.getItemStack();
-        StorageUpgradeItem carriedUpgrade = carriedStack.getItem() instanceof StorageUpgradeItem
-                ? (StorageUpgradeItem) carriedStack.getItem()
+        int utilitySlots = container.getTile().getUtilityUpgrades().getSlots();
+        ItemStack previewUpgradeStack = getUpgradePreviewStack();
+        StorageUpgradeItem carriedUpgrade = previewUpgradeStack.getItem() instanceof StorageUpgradeItem
+                ? (StorageUpgradeItem) previewUpgradeStack.getItem()
                 : null;
+        boolean utilityUpgrade = previewUpgradeStack.getItem() instanceof UtilityUpgradeItem;
 
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
@@ -249,7 +258,7 @@ public class GuiDrawer extends GuiContainer {
                 if (existing.getItem() instanceof StorageUpgradeItem) {
                     StorageUpgradeItem existingUpgrade = (StorageUpgradeItem) existing.getItem();
                     if (carriedUpgrade.getTier().getMultiplier() > existingUpgrade.getTier().getMultiplier()) {
-                        int color = container.getTile().canReplaceStorageUpgrade(i, carriedStack)
+                        int color = container.getTile().canReplaceStorageUpgrade(i, previewUpgradeStack)
                                 ? 0x5500AA00
                                 : 0x55AA0000;
                         drawGradientRect(sx, sy, sx + 18, sy + 18, color, color);
@@ -262,7 +271,40 @@ public class GuiDrawer extends GuiContainer {
                 drawGradientRect(sx, sy, sx + 18, sy + 18, 0x66000000, 0x66000000);
             }
         }
+
+        for (int i = 0; i < utilitySlots; i++) {
+            int sx = 7 + i * 18;
+            int sy = 43;
+            ItemStack existing = container.getTile().getUtilityUpgrades().getStackInSlot(i);
+
+            if (utilityUpgrade && !existing.isEmpty()) {
+                int color = container.getTile().canInsertUtilityUpgrade(i, previewUpgradeStack)
+                        ? 0x5500AA00
+                        : 0x55AA0000;
+                drawGradientRect(sx, sy, sx + 18, sy + 18, color, color);
+            }
+        }
+
         GlStateManager.enableDepth();
         GlStateManager.enableLighting();
+    }
+
+    private ItemStack getUpgradePreviewStack() {
+        ItemStack carried = mc.player == null ? ItemStack.EMPTY : mc.player.inventory.getItemStack();
+        if (!carried.isEmpty()) {
+            return carried;
+        }
+
+        Slot hovered = getSlotUnderMouse();
+        if (hovered == null || !hovered.getHasStack()) {
+            return ItemStack.EMPTY;
+        }
+
+        int upgradeSlots = container.getTile().getStorageUpgrades().getSlots() + container.getTile().getUtilityUpgrades().getSlots();
+        if (hovered.slotNumber < upgradeSlots) {
+            return ItemStack.EMPTY;
+        }
+
+        return hovered.getStack();
     }
 }

@@ -1,7 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.util;
 
-import com.xinyihl.functionalstoragelegacy.inventory.BigInventoryHandler;
-import com.xinyihl.functionalstoragelegacy.inventory.CompactingInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
