@@ -60,7 +60,7 @@ public class FunctionalStorageLegacy {
     public static final List<WoodDrawerBlock> WOOD_DRAWER_BLOCKS = new ArrayList<>();
     @Mod.Instance(Tags.MOD_ID)
     public static FunctionalStorageLegacy INSTANCE;
-    @SidedProxy(clientSide = "com.xinyihl.functionalstoragelegacy.proxy.ClientProxy", serverSide = "com.xinyihl.functionalstoragelegacy.proxy.CommonProxy")
+    @SidedProxy(clientSide = "com.xinyihl.functionalstoragelegacy.misc.ClientProxy", serverSide = "com.xinyihl.functionalstoragelegacy.misc.CommonProxy")
     public static CommonProxy proxy;
     public static DrawerControllerBlock DRAWER_CONTROLLER_BLOCK;
     // ====== Creative Tab ======
