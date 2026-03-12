@@ -544,7 +544,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     private void renderUpgradesOnFace(ControllableDrawerTile te, DrawerOptions options, float zOffset) {
         if (options == null || !options.isActive(ConfigurationToolItem.ConfigurationAction.TOGGLE_UPGRADES)) return;
 
-        float iconScale = 0.01f;
+        float iconScale = 0.002f;
 
         GlStateManager.pushMatrix();
 

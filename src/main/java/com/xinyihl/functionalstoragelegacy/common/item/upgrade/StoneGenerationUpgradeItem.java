@@ -1,7 +1,9 @@
 package com.xinyihl.functionalstoragelegacy.common.item.upgrade;
 
 import com.xinyihl.functionalstoragelegacy.FunctionalStorageLegacy;
+import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.compact.SimpleCompactingDrawerTile;
 import com.xinyihl.functionalstoragelegacy.misc.FunctionalStorageConfig;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.ITooltipFlag;
@@ -64,15 +66,50 @@ public class StoneGenerationUpgradeItem extends UtilityUpgradeItem {
 
     private boolean generateAndStoreStone(ControllableDrawerTile tile) {
         IItemHandler handler = tile.getItemHandler();
-        if (handler == null) {
-            return false;
+        if (handler == null) return false;
+
+        if (handler instanceof CompactingInventoryHandler) {
+            CompactingInventoryHandler compactingHandler = (CompactingInventoryHandler) handler;
+
+            if (!compactingHandler.isSetup()) {
+                ItemStack stoneStack = new ItemStack(Blocks.COBBLESTONE, 1);
+                int anchorSlot = compactingHandler.getSlots() - 1;
+                List<CompactingInventoryHandler.Result> results = CompactingUtil.getCompactingResults(
+                        tile.getWorld(),
+                        stoneStack,
+                        compactingHandler.getSlots(),
+                        anchorSlot
+                );
+
+                if (!results.isEmpty()) {
+
+                    while (results.size() < compactingHandler.getSlots()) {
+                        results.add(new CompactingInventoryHandler.Result(ItemStack.EMPTY, 1));
+                    }
+
+                    if (results.size() > compactingHandler.getSlots()) {
+                        results = results.subList(0, compactingHandler.getSlots());
+                    }
+                    compactingHandler.setResults(results);
+                } else {
+                    return false;
+                }
+            }
         }
 
         ItemStack stoneStack = new ItemStack(Blocks.COBBLESTONE, 1);
+        ItemStack remainder;
 
-        ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, stoneStack, false);
+        if (tile instanceof SimpleCompactingDrawerTile) {
+            remainder = handler.insertItem(1, stoneStack, false);
+            if (!remainder.isEmpty()) {
+                remainder = ItemHandlerHelper.insertItemStacked(handler, stoneStack, false);
+            }
+        } else {
+            remainder = ItemHandlerHelper.insertItemStacked(handler, stoneStack, false);
+        }
 
-        return remainder.isEmpty() || remainder.getCount() < stoneStack.getCount();
+        return remainder.isEmpty();
     }
 
     @SideOnly(Side.CLIENT)
