@@ -168,16 +168,19 @@ public final class FunctionalStorageRecipes {
                 'C', "chestWood",
                 'D', RegistrationHandler.GOLD_UPGRADE);
 
+        registerShaped(registry, "netherite_upgrade", new ItemStack(RegistrationHandler.NETHERITE_UPGRADE),
+                "IBI", "CDC", "IBI",
+                'I', "ingotNetherite",
+                'B', "blockNetherite",
+                'C', "chestWood",
+                'D', RegistrationHandler.DIAMOND_UPGRADE);
+
         registerShaped(registry, "redstone_upgrade", new ItemStack(RegistrationHandler.REDSTONE_UPGRADE),
                 "IBI", "CDC", "IBI",
                 'I', Items.REDSTONE,
                 'B', Blocks.REDSTONE_BLOCK,
                 'C', Items.COMPARATOR,
                 'D', emptyDrawer);
-
-        registerShapeless(registry, "netherite_upgrade", new ItemStack(RegistrationHandler.NETHERITE_UPGRADE),
-                RegistrationHandler.DIAMOND_UPGRADE,
-                "ingotNetherite");
 
         registerShaped(registry, "pulling_upgrade", new ItemStack(RegistrationHandler.PULLING_UPGRADE),
                 "ICI", "IDI", "IBI",
