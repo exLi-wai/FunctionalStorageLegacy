@@ -221,21 +221,23 @@ public class RegistrationHandler {
         WIRELESS_PUSHING_UPGRADE.setRegistryName("wireless_pushing_upgrade");
         WIRELESS_PUSHING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".wireless_pushing_upgrade");
 
-        UNIVERSAL_ITEM_GENERATION_T1 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T1);
-        UNIVERSAL_ITEM_GENERATION_T1.setRegistryName("universal_item_generation_T1");
-        UNIVERSAL_ITEM_GENERATION_T1.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T1");
+        if(Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED) {
+            UNIVERSAL_ITEM_GENERATION_T1 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T1);
+            UNIVERSAL_ITEM_GENERATION_T1.setRegistryName("universal_item_generation_T1");
+            UNIVERSAL_ITEM_GENERATION_T1.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T1");
 
-        UNIVERSAL_ITEM_GENERATION_T2 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T2);
-        UNIVERSAL_ITEM_GENERATION_T2.setRegistryName("universal_item_generation_T2");
-        UNIVERSAL_ITEM_GENERATION_T2.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T2");
+            UNIVERSAL_ITEM_GENERATION_T2 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T2);
+            UNIVERSAL_ITEM_GENERATION_T2.setRegistryName("universal_item_generation_T2");
+            UNIVERSAL_ITEM_GENERATION_T2.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T2");
 
-        UNIVERSAL_ITEM_GENERATION_T3 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T3);
-        UNIVERSAL_ITEM_GENERATION_T3.setRegistryName("universal_item_generation_T3");
-        UNIVERSAL_ITEM_GENERATION_T3.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T3");
+            UNIVERSAL_ITEM_GENERATION_T3 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T3);
+            UNIVERSAL_ITEM_GENERATION_T3.setRegistryName("universal_item_generation_T3");
+            UNIVERSAL_ITEM_GENERATION_T3.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T3");
 
-        UNIVERSAL_ITEM_GENERATION_T4 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T4);
-        UNIVERSAL_ITEM_GENERATION_T4.setRegistryName("universal_item_generation_T4");
-        UNIVERSAL_ITEM_GENERATION_T4.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T4");
+            UNIVERSAL_ITEM_GENERATION_T4 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T4);
+            UNIVERSAL_ITEM_GENERATION_T4.setRegistryName("universal_item_generation_T4");
+            UNIVERSAL_ITEM_GENERATION_T4.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T4");
+        }
         // Tools
         CONFIGURATION_TOOL = new ConfigurationToolItem();
         CONFIGURATION_TOOL.setRegistryName("configuration_tool");
@@ -264,12 +266,15 @@ public class RegistrationHandler {
                 STONE_GENERATION_UPGRADE_T1,
                 STONE_GENERATION_UPGRADE_T2,
                 STONE_GENERATION_UPGRADE_T3,
-                STONE_GENERATION_UPGRADE_T4,
-                UNIVERSAL_ITEM_GENERATION_T1,
-                UNIVERSAL_ITEM_GENERATION_T2,
-                UNIVERSAL_ITEM_GENERATION_T3,
-                UNIVERSAL_ITEM_GENERATION_T4
+                STONE_GENERATION_UPGRADE_T4
         );
+        if(Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED){
+            event.getRegistry().registerAll(
+                    UNIVERSAL_ITEM_GENERATION_T1,
+                    UNIVERSAL_ITEM_GENERATION_T2,
+                    UNIVERSAL_ITEM_GENERATION_T3,
+                    UNIVERSAL_ITEM_GENERATION_T4);
+        }
     }
 
     private static ItemBlock createItemBlock(Block block) {

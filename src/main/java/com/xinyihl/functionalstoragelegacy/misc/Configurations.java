@@ -6,6 +6,7 @@ import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import org.omg.CORBA.PUBLIC_MEMBER;
 
 @Config(modid = Tags.MOD_ID, name = Tags.MOD_ID, category = "")
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
@@ -171,6 +172,11 @@ public final class Configurations {
         @Config.Comment("Universal Generator Items generation amount")
         @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
         public int UNIVERSAL_ITEMS_GENERATION_AMOUNT = 1;
+
+        @Config.Name("universalItemsGenerationRegistered")
+        @Config.Comment("Universal Generator Items generation registered")
+        public Boolean UNIVERSAL_ITEMS_GENERATION_REGISTERED = false;
+
     }
 
     public static final class Client {
