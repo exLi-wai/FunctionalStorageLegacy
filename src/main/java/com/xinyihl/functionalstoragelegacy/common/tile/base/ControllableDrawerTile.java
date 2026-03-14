@@ -355,7 +355,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
                 float tierMult = upgrade.getTier().getMultiplier();
                 state.storageMultiplier *= tierMult;
                 state.fluidMultiplier *= (tierMult / Configurations.STORAGE.fluidDivisor);
-                state.rangeMultiplier *= (tierMult / Configurations.STORAGE.rangeDivisor);
+                state.rangeMultiplier += (tierMult / Configurations.STORAGE.rangeDivisor);
             }
         }
         if (stack.getItem() == RegistrationHandler.CREATIVE_VENDING_UPGRADE) {

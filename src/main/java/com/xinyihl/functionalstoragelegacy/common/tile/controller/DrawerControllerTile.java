@@ -238,7 +238,7 @@ public class DrawerControllerTile extends ControllableDrawerTile {
      * Base range from config multiplied by range fraction from storage upgrades.
      */
     public double getControllerRange() {
-        return Configurations.GENERAL.drawerControllerLinkingRange * getRangeMultiplier();
+        return Configurations.GENERAL.drawerControllerLinkingRange + getRangeMultiplier();
     }
 
     public boolean addConnectedDrawers(LinkingToolItem.ActionMode action, BlockPos... positions) {
