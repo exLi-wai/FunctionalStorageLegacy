@@ -234,10 +234,10 @@ public abstract class BigFluidHandler implements IFluidHandler {
 
     public int getCapacityPerTank() {
         float multiplier = getMultiplier();
-        if (multiplier <= 0 || multiplier > 100000) {
+        if (multiplier <= 0 || multiplier > Integer.MAX_VALUE) {
             multiplier = 1.0f;
         }
-        return (int) Math.min(multiplier * 1000, Integer.MAX_VALUE / 2);
+        return (int) Math.min(multiplier * 1000, (float) Integer.MAX_VALUE / 2);
     }
 
     public List<CustomFluidTank> getTanks() {

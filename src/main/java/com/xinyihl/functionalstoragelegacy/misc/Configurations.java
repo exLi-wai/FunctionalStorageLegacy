@@ -6,7 +6,6 @@ import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.omg.CORBA.PUBLIC_MEMBER;
 
 @Config(modid = Tags.MOD_ID, name = Tags.MOD_ID, category = "")
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
