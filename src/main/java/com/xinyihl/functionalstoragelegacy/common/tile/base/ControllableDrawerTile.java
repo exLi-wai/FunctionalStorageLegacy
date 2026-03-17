@@ -290,7 +290,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
                 || slot >= utilityUpgrades.getSlots()) {
             return false;
         }
-        return !hasIncompatibleUpgrade(stack, null);
+        UtilityUpgradeItem utilityUpgrade = (UtilityUpgradeItem) stack.getItem();
+        return utilityUpgrade.canInsertInto(this) && !hasIncompatibleUpgrade(stack, null);
     }
 
     public boolean canRemoveStorageUpgrade(int slot) {

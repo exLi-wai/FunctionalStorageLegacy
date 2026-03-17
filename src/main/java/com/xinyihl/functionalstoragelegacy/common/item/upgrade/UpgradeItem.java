@@ -27,9 +27,8 @@ public abstract class UpgradeItem extends Item {
         return type;
     }
 
-    public UpgradeItem incompatibleWith(Item... upgrades) {
+    public void incompatibleWith(Item... upgrades) {
         incompatibleUpgrades.addAll(Arrays.asList(upgrades));
-        return this;
     }
 
     public Set<Item> getIncompatibleUpgrades(@Nonnull ItemStack stack) {

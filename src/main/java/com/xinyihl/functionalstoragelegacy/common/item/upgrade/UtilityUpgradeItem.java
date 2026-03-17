@@ -33,7 +33,9 @@ import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Base class for all utility upgrades.
@@ -46,6 +48,7 @@ public class UtilityUpgradeItem extends UpgradeItem {
     private static final String TARGET_NAME_KEY = "TargetName";
 
     private final UtilityAction utilityAction;
+    private final Set<Class<? extends ControllableDrawerTile>> insertableDrawerTypes = new LinkedHashSet<>();
 
     public UtilityUpgradeItem(UtilityAction utilityAction) {
         super(Type.UTILITY);
@@ -127,6 +130,29 @@ public class UtilityUpgradeItem extends UpgradeItem {
 
     public UtilityAction getUtilityAction() {
         return utilityAction;
+    }
+
+    @SafeVarargs
+    public final void insertableInto(Class<? extends ControllableDrawerTile>... drawerTypes) {
+        for (Class<? extends ControllableDrawerTile> drawerType : drawerTypes) {
+            if (drawerType != null) {
+                insertableDrawerTypes.add(drawerType);
+            }
+        }
+    }
+
+    public boolean canInsertInto(@Nullable ControllableDrawerTile tile) {
+        if (tile == null || insertableDrawerTypes.isEmpty()) {
+            return true;
+        }
+
+        for (Class<? extends ControllableDrawerTile> drawerType : insertableDrawerTypes) {
+            if (drawerType.isInstance(tile)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public boolean isWirelessUtility() {

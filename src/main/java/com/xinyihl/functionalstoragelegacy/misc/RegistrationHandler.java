@@ -17,8 +17,11 @@ import com.xinyihl.functionalstoragelegacy.common.item.DrawerItemBlock;
 import com.xinyihl.functionalstoragelegacy.common.item.LinkingToolItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.*;
 import com.xinyihl.functionalstoragelegacy.common.recipe.FunctionalStorageRecipes;
+import com.xinyihl.functionalstoragelegacy.common.tile.EnderDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.FluidDrawerTile;
+import com.xinyihl.functionalstoragelegacy.common.tile.WoodDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
-import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UniversalItemGeneration;
+import com.xinyihl.functionalstoragelegacy.common.tile.compact.CompactingDrawerTile;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.creativetab.CreativeTabs;
@@ -73,7 +76,7 @@ public class RegistrationHandler {
     public static StorageUpgradeItem GOLD_UPGRADE;
     public static StorageUpgradeItem DIAMOND_UPGRADE;
     public static StorageUpgradeItem NETHERITE_UPGRADE;
-    public static Item CREATIVE_VENDING_UPGRADE;
+    public static UpgradeItem CREATIVE_VENDING_UPGRADE;
     // Utility Upgrades
     public static UtilityUpgradeItem VOID_UPGRADE;
     public static UtilityUpgradeItem REDSTONE_UPGRADE;
@@ -173,28 +176,13 @@ public class RegistrationHandler {
         NETHERITE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".netherite_upgrade");
 
         CREATIVE_VENDING_UPGRADE = new UpgradeItem(UpgradeItem.Type.STORAGE) {
-        }
-                .setRegistryName("creative_vending_upgrade")
-                .setTranslationKey(Tags.MOD_ID + ".creative_vending_upgrade")
-                .setMaxStackSize(1)
-                .setCreativeTab(CREATIVE_TAB);
-        ((UpgradeItem) CREATIVE_VENDING_UPGRADE).incompatibleWith(CREATIVE_VENDING_UPGRADE);
+        };
+        CREATIVE_VENDING_UPGRADE.setRegistryName("creative_vending_upgrade");
+        CREATIVE_VENDING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".creative_vending_upgrade");
+        CREATIVE_VENDING_UPGRADE.setMaxStackSize(1);
+        CREATIVE_VENDING_UPGRADE.setCreativeTab(CREATIVE_TAB);
+        CREATIVE_VENDING_UPGRADE.incompatibleWith(CREATIVE_VENDING_UPGRADE);
 
-        STONE_GENERATION_UPGRADE_T1 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T1);
-        STONE_GENERATION_UPGRADE_T1.setRegistryName("stone_generation_upgrade_t1");
-        STONE_GENERATION_UPGRADE_T1.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t1");
-
-        STONE_GENERATION_UPGRADE_T2 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T2);
-        STONE_GENERATION_UPGRADE_T2.setRegistryName("stone_generation_upgrade_t2");
-        STONE_GENERATION_UPGRADE_T2.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t2");
-
-        STONE_GENERATION_UPGRADE_T3 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T3);
-        STONE_GENERATION_UPGRADE_T3.setRegistryName("stone_generation_upgrade_t3");
-        STONE_GENERATION_UPGRADE_T3.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t3");
-
-        STONE_GENERATION_UPGRADE_T4 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T4);
-        STONE_GENERATION_UPGRADE_T4.setRegistryName("stone_generation_upgrade_t4");
-        STONE_GENERATION_UPGRADE_T4.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t4");
         // Utility Upgrades
         VOID_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.VOID);
         VOID_UPGRADE.setRegistryName("void_upgrade");
@@ -204,6 +192,7 @@ public class RegistrationHandler {
         REDSTONE_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.REDSTONE);
         REDSTONE_UPGRADE.setRegistryName("redstone_upgrade");
         REDSTONE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".redstone_upgrade");
+        REDSTONE_UPGRADE.incompatibleWith(REDSTONE_UPGRADE);
 
         PULLING_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.PULLING);
         PULLING_UPGRADE.setRegistryName("pulling_upgrade");
@@ -225,39 +214,68 @@ public class RegistrationHandler {
         WIRELESS_PUSHING_UPGRADE.setRegistryName("wireless_pushing_upgrade");
         WIRELESS_PUSHING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".wireless_pushing_upgrade");
 
+        STONE_GENERATION_UPGRADE_T1 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T1);
+        STONE_GENERATION_UPGRADE_T1.setRegistryName("stone_generation_upgrade_t1");
+        STONE_GENERATION_UPGRADE_T1.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t1");
+        STONE_GENERATION_UPGRADE_T1.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
+
+        STONE_GENERATION_UPGRADE_T2 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T2);
+        STONE_GENERATION_UPGRADE_T2.setRegistryName("stone_generation_upgrade_t2");
+        STONE_GENERATION_UPGRADE_T2.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t2");
+        STONE_GENERATION_UPGRADE_T2.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
+
+        STONE_GENERATION_UPGRADE_T3 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T3);
+        STONE_GENERATION_UPGRADE_T3.setRegistryName("stone_generation_upgrade_t3");
+        STONE_GENERATION_UPGRADE_T3.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t3");
+        STONE_GENERATION_UPGRADE_T3.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
+
+        STONE_GENERATION_UPGRADE_T4 = new StoneGenerationUpgradeItem(StoneGenerationUpgradeItem.StoneTier.T4);
+        STONE_GENERATION_UPGRADE_T4.setRegistryName("stone_generation_upgrade_t4");
+        STONE_GENERATION_UPGRADE_T4.setTranslationKey(Tags.MOD_ID + ".stone_generation_upgrade_t4");
+        STONE_GENERATION_UPGRADE_T4.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
+
         WATER_GENERATION_UPGRADE_T1 = new WaterGenerationUpgradeItem(WaterGenerationUpgradeItem.WaterGenerationTire.T1);
         WATER_GENERATION_UPGRADE_T1.setRegistryName("water_generation_upgrade_t1");
         WATER_GENERATION_UPGRADE_T1.setTranslationKey(Tags.MOD_ID + ".water_generation_upgrade_t1");
+        WATER_GENERATION_UPGRADE_T1.insertableInto(FluidDrawerTile.class);
 
         WATER_GENERATION_UPGRADE_T2 = new WaterGenerationUpgradeItem(WaterGenerationUpgradeItem.WaterGenerationTire.T2);
         WATER_GENERATION_UPGRADE_T2.setRegistryName("water_generation_upgrade_t2");
         WATER_GENERATION_UPGRADE_T2.setTranslationKey(Tags.MOD_ID + ".water_generation_upgrade_t2");
+        WATER_GENERATION_UPGRADE_T2.insertableInto(FluidDrawerTile.class);
 
         WATER_GENERATION_UPGRADE_T3 = new WaterGenerationUpgradeItem(WaterGenerationUpgradeItem.WaterGenerationTire.T3);
         WATER_GENERATION_UPGRADE_T3.setRegistryName("water_generation_upgrade_t3");
         WATER_GENERATION_UPGRADE_T3.setTranslationKey(Tags.MOD_ID + ".water_generation_upgrade_t3");
+        WATER_GENERATION_UPGRADE_T3.insertableInto(FluidDrawerTile.class);
 
         WATER_GENERATION_UPGRADE_T4 = new WaterGenerationUpgradeItem(WaterGenerationUpgradeItem.WaterGenerationTire.T4);
         WATER_GENERATION_UPGRADE_T4.setRegistryName("water_generation_upgrade_t4");
         WATER_GENERATION_UPGRADE_T4.setTranslationKey(Tags.MOD_ID + ".water_generation_upgrade_t4");
+        WATER_GENERATION_UPGRADE_T4.insertableInto(FluidDrawerTile.class);
 
         if(Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED) {
             UNIVERSAL_ITEM_GENERATION_T1 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T1);
             UNIVERSAL_ITEM_GENERATION_T1.setRegistryName("universal_item_generation_T1");
             UNIVERSAL_ITEM_GENERATION_T1.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T1");
+            UNIVERSAL_ITEM_GENERATION_T1.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
 
             UNIVERSAL_ITEM_GENERATION_T2 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T2);
             UNIVERSAL_ITEM_GENERATION_T2.setRegistryName("universal_item_generation_T2");
             UNIVERSAL_ITEM_GENERATION_T2.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T2");
+            UNIVERSAL_ITEM_GENERATION_T2.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
 
             UNIVERSAL_ITEM_GENERATION_T3 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T3);
             UNIVERSAL_ITEM_GENERATION_T3.setRegistryName("universal_item_generation_T3");
             UNIVERSAL_ITEM_GENERATION_T3.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T3");
+            UNIVERSAL_ITEM_GENERATION_T3.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
 
             UNIVERSAL_ITEM_GENERATION_T4 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T4);
             UNIVERSAL_ITEM_GENERATION_T4.setRegistryName("universal_item_generation_T4");
             UNIVERSAL_ITEM_GENERATION_T4.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T4");
+            UNIVERSAL_ITEM_GENERATION_T4.insertableInto(WoodDrawerTile.class, EnderDrawerTile.class, CompactingDrawerTile.class);
         }
+
         // Tools
         CONFIGURATION_TOOL = new ConfigurationToolItem();
         CONFIGURATION_TOOL.setRegistryName("configuration_tool");
