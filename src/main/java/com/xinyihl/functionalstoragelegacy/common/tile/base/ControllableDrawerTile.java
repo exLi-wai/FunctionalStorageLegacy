@@ -43,7 +43,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     protected boolean isCreative = false;
     protected boolean isVoid = false;
     protected boolean isLocked = false;
-    private boolean needsUpgradeCache = true;
+    protected boolean needsUpgradeCache = true;
     private float storageMultiplier = 1;
     private float fluidMultiplier = 1;
     private float rangeMultiplier = 1;

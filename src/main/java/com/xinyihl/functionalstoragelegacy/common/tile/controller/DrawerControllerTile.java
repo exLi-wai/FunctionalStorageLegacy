@@ -2,6 +2,7 @@ package com.xinyihl.functionalstoragelegacy.common.tile.controller;
 
 import com.xinyihl.functionalstoragelegacy.FunctionalStorageLegacy;
 import com.xinyihl.functionalstoragelegacy.api.ILockable;
+import com.xinyihl.functionalstoragelegacy.client.render.DrawerOptions;
 import com.xinyihl.functionalstoragelegacy.common.inventory.controller.ControllerFluidHandler;
 import com.xinyihl.functionalstoragelegacy.common.inventory.controller.ControllerItemHandler;
 import com.xinyihl.functionalstoragelegacy.common.item.ConfigurationToolItem;
@@ -20,10 +21,12 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,9 +48,54 @@ public class DrawerControllerTile extends ControllableDrawerTile {
     private final List<Long> linkedExtensionPositions;
     private final ControllerItemHandler inventoryHandler;
     private final ControllerFluidHandler fluidHandler;
+    protected boolean needRebuild = false;
 
     public DrawerControllerTile() {
-        super();
+        this.drawerOptions = new DrawerOptions();
+        this.storageUpgrades = new ItemStackHandler(getStorageUpgradesAmount()) {
+            @Override
+            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+                return canInsertStorageUpgrade(slot, stack);
+            }
+
+            @Override
+            protected int getStackLimit(int slot, @Nonnull ItemStack stack) {
+                return 1;
+            }
+
+            @Nonnull
+            @Override
+            public ItemStack extractItem(int slot, int amount, boolean simulate) {
+                if (!canRemoveStorageUpgrade(slot)) {
+                    return ItemStack.EMPTY;
+                }
+                return super.extractItem(slot, amount, simulate);
+            }
+
+            @Override
+            protected void onContentsChanged(int slot) {
+                needsUpgradeCache = true;
+                needRebuild = true;
+                markDirty();
+            }
+        };
+        this.utilityUpgrades = new ItemStackHandler(getUtilityUpgradesAmount()) {
+            @Override
+            public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
+                return canInsertUtilityUpgrade(slot, stack);
+            }
+
+            @Override
+            protected int getStackLimit(int slot, @Nonnull ItemStack stack) {
+                return 1;
+            }
+
+            @Override
+            protected void onContentsChanged(int slot) {
+                needsUpgradeCache = true;
+                markDirty();
+            }
+        };
         this.connectedDrawers = new ConnectedDrawers(null, this);
         this.linkedExtensionPositions = new ArrayList<>();
         this.inventoryHandler = new ControllerItemHandler();
@@ -93,31 +141,34 @@ public class DrawerControllerTile extends ControllableDrawerTile {
         super.update();
         if (world != null && !world.isRemote) {
             // Periodically rebuild connected drawers list to keep it fresh
-            if (world.getTotalWorldTime() % 40 == 0) {
+            if (world.getTotalWorldTime() % 10 == 0) {
                 int expectedSize = connectedDrawers.getConnectedDrawers().size();
-                int actualSize = connectedDrawers.getItemHandlers().size()
-                        + connectedDrawers.getFluidHandlers().size();
-                if (expectedSize != actualSize) {
+                int actualSize = connectedDrawers.getItemHandlers().size() + connectedDrawers.getFluidHandlers().size();
+                if (expectedSize != actualSize || needRebuild) {
+                    AxisAlignedBB area = new AxisAlignedBB(pos).grow(getControllerRange());
                     connectedDrawers.getConnectedDrawers().removeIf(
-                            pos -> !(world.getTileEntity(BlockPos.fromLong(pos)) instanceof ControllableDrawerTile)
+                            pos -> {
+                                BlockPos pos1 = BlockPos.fromLong(pos);
+                                TileEntity tile = world.getTileEntity(pos1);
+                                return !(area.contains(new Vec3d(pos1.getX() + 0.5, pos1.getY() + 0.5, pos1.getZ() + 0.5)) && tile instanceof ControllableDrawerTile);
+                            }
                     );
                     connectedDrawers.setLevel(world);
                     connectedDrawers.rebuild();
                     refreshHandlers();
                     markDirty();
                     sendUpdatePacket();
+                    needRebuild = false;
                 }
             }
         }
     }
 
     @Override
-    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing,
-                                   float hitX, float hitY, float hitZ, int slot) {
+    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ, int slot) {
         ItemStack heldStack = player.getHeldItem(hand);
 
-        if (heldStack.getItem() instanceof ConfigurationToolItem
-                || heldStack.getItem() == RegistrationHandler.LINKING_TOOL) {
+        if (heldStack.getItem() instanceof ConfigurationToolItem || heldStack.getItem() == RegistrationHandler.LINKING_TOOL) {
             return false;
         }
 
