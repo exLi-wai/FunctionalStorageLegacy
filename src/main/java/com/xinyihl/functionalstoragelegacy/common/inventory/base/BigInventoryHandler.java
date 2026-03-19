@@ -65,8 +65,33 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
     @Override
     public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
+
+        if (isCreative() && slot < slots) {
+            BigStack bigStack = this.storedStacks.get(slot);
+            if (bigStack.getStack().isEmpty()) {
+                if (!simulate) {
+                    ItemStack template = stack.copy();
+                    template.setCount(stack.getMaxStackSize());
+                    bigStack.setStack(template);
+                    bigStack.setAmount(Integer.MAX_VALUE);
+                    onChange();
+                }
+                return ItemStack.EMPTY;
+            }
+
+            if (areItemStacksEqual(bigStack.getStack(), stack)) {
+                if (!simulate) {
+                    bigStack.setAmount(Integer.MAX_VALUE);
+                    onChange();
+                }
+                return ItemStack.EMPTY;
+            }
+            return stack;
+        }
+
         if (isVoid() && slots == slot && isVoidValid(stack) || (isVoidValid(stack) && isCreative()))
             return ItemStack.EMPTY;
+
         if (isValid(slot, stack)) {
             BigStack bigStack = this.storedStacks.get(slot);
             int inserted = Math.max(0, Math.min(getSlotLimit(slot) - bigStack.getAmount(), stack.getCount()));
