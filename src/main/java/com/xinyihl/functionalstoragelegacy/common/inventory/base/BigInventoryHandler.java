@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.base;
 
 import com.xinyihl.functionalstoragelegacy.api.ILockable;
+import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.items.IItemHandler;
@@ -29,17 +30,6 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
         for (int i = 0; i < slots; i++) {
             this.storedStacks.add(new BigStack(ItemStack.EMPTY, 0));
         }
-    }
-
-    /**
-     * Check if two ItemStacks are the same item with same metadata and NBT (ignoring count).
-     */
-    public static boolean areItemStacksEqual(ItemStack a, ItemStack b) {
-        if (a.isEmpty() && b.isEmpty()) return true;
-        if (a.isEmpty() || b.isEmpty()) return false;
-        return a.getItem() == b.getItem()
-                && a.getMetadata() == b.getMetadata()
-                && ItemStack.areItemStackTagsEqual(a, b);
     }
 
     @Override
@@ -79,7 +69,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                 return ItemStack.EMPTY;
             }
 
-            if (areItemStacksEqual(bigStack.getStack(), stack)) {
+            if (ItemUtil.areItemStacksEqual(bigStack.getStack(), stack)) {
                 if (!simulate) {
                     bigStack.setAmount(Integer.MAX_VALUE);
                     onChange();
@@ -167,14 +157,14 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
             BigStack bigStack = this.storedStacks.get(slot);
             ItemStack fl = bigStack.getStack();
             if (isLocked() && fl.isEmpty()) return false;
-            return fl.isEmpty() || areItemStacksEqual(fl, stack);
+            return fl.isEmpty() || ItemUtil.areItemStacksEqual(fl, stack);
         }
         return false;
     }
 
     private boolean isVoidValid(ItemStack stack) {
         for (BigStack storedStack : this.storedStacks) {
-            if (areItemStacksEqual(storedStack.getStack(), stack)) return true;
+            if (ItemUtil.areItemStacksEqual(storedStack.getStack(), stack)) return true;
         }
         return false;
     }

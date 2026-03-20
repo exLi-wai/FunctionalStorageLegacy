@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.block;
 
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
+import com.xinyihl.functionalstoragelegacy.api.HitBoxLayout;
 import com.xinyihl.functionalstoragelegacy.common.block.base.DrawerBlock;
 import com.xinyihl.functionalstoragelegacy.common.item.LinkingToolItem;
 import com.xinyihl.functionalstoragelegacy.common.tile.EnderDrawerTile;

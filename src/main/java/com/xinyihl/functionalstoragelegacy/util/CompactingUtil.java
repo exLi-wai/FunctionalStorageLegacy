@@ -1,7 +1,6 @@
 package com.xinyihl.functionalstoragelegacy.util;
 
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.compact.SimpleCompactingDrawerTile;
 import net.minecraft.inventory.InventoryCrafting;
@@ -216,7 +215,7 @@ public class CompactingUtil {
         IRecipe recipe = CraftingManager.findMatchingRecipe(container, world);
         if (recipe != null) {
             ItemStack output = recipe.getRecipeOutput();
-            if (!output.isEmpty() && !BigInventoryHandler.areItemStacksEqual(output, input) && output.getCount() > 1) {
+            if (!output.isEmpty() && !ItemUtil.areItemStacksEqual(output, input) && output.getCount() > 1) {
                 return new LowerTier(output.copy(), output.getCount());
             }
         }
@@ -231,9 +230,9 @@ public class CompactingUtil {
         IRecipe recipe = CraftingManager.findMatchingRecipe(container, world);
         if (recipe != null) {
             ItemStack output = recipe.getRecipeOutput();
-            if (!output.isEmpty() && !BigInventoryHandler.areItemStacksEqual(output, input)) {
+            if (!output.isEmpty() && !ItemUtil.areItemStacksEqual(output, input)) {
                 LowerTier reverse = findLowerTier(world, output);
-                if (reverse != null && BigInventoryHandler.areItemStacksEqual(reverse.result, input)) {
+                if (reverse != null && ItemUtil.areItemStacksEqual(reverse.result, input)) {
                     return new HigherTier(output.copy(), gridSize * gridSize);
                 }
             }

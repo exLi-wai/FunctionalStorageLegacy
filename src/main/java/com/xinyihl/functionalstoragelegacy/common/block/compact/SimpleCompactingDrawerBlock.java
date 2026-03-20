@@ -1,5 +1,6 @@
 package com.xinyihl.functionalstoragelegacy.common.block.compact;
 
+import com.xinyihl.functionalstoragelegacy.api.HitBoxLayout;
 import com.xinyihl.functionalstoragelegacy.common.block.base.DrawerBlock;
 import com.xinyihl.functionalstoragelegacy.common.tile.compact.SimpleCompactingDrawerTile;
 import net.minecraft.block.material.Material;

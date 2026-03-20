@@ -2,6 +2,7 @@ package com.xinyihl.functionalstoragelegacy.common.block;
 
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
 import com.xinyihl.functionalstoragelegacy.api.DrawerWoodType;
+import com.xinyihl.functionalstoragelegacy.api.HitBoxLayout;
 import com.xinyihl.functionalstoragelegacy.common.block.base.DrawerBlock;
 import com.xinyihl.functionalstoragelegacy.common.tile.WoodDrawerTile;
 import net.minecraft.block.material.Material;

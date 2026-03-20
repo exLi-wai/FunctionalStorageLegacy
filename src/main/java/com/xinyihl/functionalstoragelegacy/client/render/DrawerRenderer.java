@@ -1,5 +1,6 @@
 package com.xinyihl.functionalstoragelegacy.client.render;
 
+import com.xinyihl.functionalstoragelegacy.api.Attachment;
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
 import com.xinyihl.functionalstoragelegacy.common.block.base.DrawerBlock;
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
@@ -63,7 +64,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         if (!(state.getBlock() instanceof DrawerBlock)) return;
 
         DrawerBlock block = (DrawerBlock) state.getBlock();
-        DrawerBlock.Attachment attachment = DrawerBlock.getAttachment(state);
+        Attachment attachment = DrawerBlock.getAttachment(state);
         EnumFacing horizontalFacing = DrawerBlock.getHorizontalFacing(state);
         EnumFacing frontFacing = DrawerBlock.getFrontFacing(state);
         DrawerOptions options = te.getDrawerOptions();
@@ -271,7 +272,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     // Face transformation
     // ============================================================
-    private void setupFaceTransform(DrawerBlock.Attachment attachment, EnumFacing horizontalFacing) {
+    private void setupFaceTransform(Attachment attachment, EnumFacing horizontalFacing) {
         GlStateManager.translate(0.5F, 0.5F, 0.5F);
 
         int rotY;

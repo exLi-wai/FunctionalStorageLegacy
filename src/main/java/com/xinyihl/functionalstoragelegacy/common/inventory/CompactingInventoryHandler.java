@@ -1,7 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory;
 
 import com.xinyihl.functionalstoragelegacy.api.ILockable;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.items.IItemHandler;
@@ -32,7 +32,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
     }
 
     private static boolean areItemStacksEqual(ItemStack a, ItemStack b) {
-        return BigInventoryHandler.areItemStacksEqual(a, b);
+        return ItemUtil.areItemStacksEqual(a, b);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.controller;
 
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 
@@ -59,7 +59,7 @@ public class ControllerItemHandler implements IItemHandler {
         for (IItemHandler handler : handlers) {
             for (int s = 0; s < handler.getSlots(); s++) {
                 ItemStack existing = handler.getStackInSlot(s);
-                if (!existing.isEmpty() && BigInventoryHandler.areItemStacksEqual(existing, remaining)) {
+                if (!existing.isEmpty() && ItemUtil.areItemStacksEqual(existing, remaining)) {
                     remaining = handler.insertItem(s, remaining, simulate);
                     if (remaining.isEmpty()) return ItemStack.EMPTY;
                 }

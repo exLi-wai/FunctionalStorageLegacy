@@ -267,7 +267,7 @@ public class GuiDrawer extends GuiContainer {
                 }
             }
 
-            if (container.getTile().isStorageUpgradeLocked(i)) {
+            if (!container.getTile().canRemoveStorageUpgrade(i)) {
                 drawGradientRect(sx, sy, sx + 18, sy + 18, 0x66000000, 0x66000000);
             }
         }

@@ -9,6 +9,7 @@ import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UpgradeItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UtilityUpgradeItem;
 import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import com.xinyihl.functionalstoragelegacy.misc.RegistrationHandler;
+import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
@@ -205,7 +206,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         }
 
         // Try to insert storage upgrade
-        if (isStorageUpgradeItem(heldStack)) {
+        if (ItemUtil.isStorageUpgradeItem(heldStack)) {
             for (int i = 0; i < storageUpgrades.getSlots(); i++) {
                 if (storageUpgrades.getStackInSlot(i).isEmpty() && canInsertStorageUpgrade(i, heldStack)) {
                     ItemStack toInsert = heldStack.splitStack(1);
@@ -278,16 +279,14 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     }
 
     public boolean canInsertStorageUpgrade(int slot, @Nonnull ItemStack stack) {
-        if (!isStorageUpgradeItem(stack) || slot < 0 || slot >= storageUpgrades.getSlots()) {
+        if (!ItemUtil.isStorageUpgradeItem(stack) || slot < 0 || slot >= storageUpgrades.getSlots()) {
             return false;
         }
         return !hasIncompatibleUpgrade(stack, slot);
     }
 
     public boolean canInsertUtilityUpgrade(int slot, @Nonnull ItemStack stack) {
-        if (!(stack.getItem() instanceof UtilityUpgradeItem)
-                || slot < 0
-                || slot >= utilityUpgrades.getSlots()) {
+        if (!ItemUtil.isUtilityUpgradeItem(stack) || slot < 0 || slot >= utilityUpgrades.getSlots()) {
             return false;
         }
         UtilityUpgradeItem utilityUpgrade = (UtilityUpgradeItem) stack.getItem();
@@ -305,12 +304,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         return canApplyUpgradeState(calculateUpgradeState(slot, ItemStack.EMPTY));
     }
 
-    public boolean isStorageUpgradeLocked(int slot) {
-        return !canRemoveStorageUpgrade(slot);
-    }
-
     public boolean canReplaceStorageUpgrade(int slot, @Nonnull ItemStack replacement) {
-        if (!isStorageUpgradeItem(replacement) || slot < 0 || slot >= storageUpgrades.getSlots()) {
+        if (!ItemUtil.isStorageUpgradeItem(replacement) || slot < 0 || slot >= storageUpgrades.getSlots()) {
             return false;
         }
         if (!storageUpgrades.getStackInSlot(slot).isEmpty() && hasIncompatibleUpgrade(replacement, slot)) {
@@ -390,8 +385,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
             return false;
         }
         Item existingItem = existing.getItem();
-        return candidateConflicts.contains(existingItem)
-                || getIncompatibleUpgrades(existing).contains(candidateItem);
+        return candidateConflicts.contains(existingItem) || getIncompatibleUpgrades(existing).contains(candidateItem);
     }
 
     protected Set<Item> getIncompatibleUpgrades(@Nonnull ItemStack stack) {
@@ -399,11 +393,6 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
             return ((UpgradeItem) stack.getItem()).getIncompatibleUpgrades(stack);
         }
         return Collections.emptySet();
-    }
-
-    protected boolean isStorageUpgradeItem(@Nonnull ItemStack stack) {
-        return stack.getItem() instanceof StorageUpgradeItem
-                || stack.getItem() == RegistrationHandler.CREATIVE_VENDING_UPGRADE;
     }
 
     public float getStorageMultiplier() {
@@ -523,7 +512,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     }
 
     protected int calculateRedstoneSignal() {
-        return 0; // Override in subclasses
+        return 0;
     }
 
     public void sendUpdatePacket() {
