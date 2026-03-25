@@ -130,7 +130,7 @@ public class ContainerDrawer extends Container {
     }
 
     private boolean isHigherTier(StorageUpgradeItem candidate, StorageUpgradeItem existing) {
-        return candidate.getTier().getMultiplier() > existing.getTier().getMultiplier();
+        return candidate.getTier().isHigherThan(existing.getTier());
     }
 
     private boolean movePlayerUpgradeStack(EntityPlayer playerIn, ItemStack stackInSlot) {

@@ -59,6 +59,16 @@ public class WoodDrawerTile extends ControllableDrawerTile {
             }
 
             @Override
+            protected boolean allowsEquivalentItems() {
+                return WoodDrawerTile.this.hasOreDictionaryUpgrade();
+            }
+
+            @Override
+            protected boolean hasMaxStorage() {
+                return WoodDrawerTile.this.hasMaxStorageUpgrade();
+            }
+
+            @Override
             public boolean isVoid() {
                 return WoodDrawerTile.this.isVoid();
             }
@@ -235,7 +245,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected boolean canApplyUpgradeState(UpgradeState state) {
-        if (state.creative) {
+        if (state.creative || state.maxStorage) {
             return true;
         }
         float baseSize = state.ironDowngrade ? 1.0f : drawerType.getSlotAmount();

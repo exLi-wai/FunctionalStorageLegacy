@@ -58,6 +58,8 @@ final class DrawerStackDataHelper {
                     StorageUpgradeItem upgrade = (StorageUpgradeItem) upgradeStack.getItem();
                     if (upgrade.getTier() == StorageUpgradeItem.StorageTier.IRON) {
                         state.ironDowngrade = true;
+                    } else if (upgrade.isMaxStorageUpgrade()) {
+                        state.maxStorage = true;
                     } else {
                         float tierMult = upgrade.getTier().getMultiplier();
                         state.storageMultiplier *= tierMult;
@@ -76,7 +78,9 @@ final class DrawerStackDataHelper {
             for (int i = 0; i < utilityUpgrades.getSlots(); i++) {
                 if (utilityUpgrades.getStackInSlot(i).getItem() == RegistrationHandler.VOID_UPGRADE) {
                     state.voidUpgrade = true;
-                    break;
+                }
+                if (utilityUpgrades.getStackInSlot(i).getItem() == RegistrationHandler.ORE_DICTIONARY_UPGRADE) {
+                    state.oreDictionary = true;
                 }
             }
         }
@@ -88,8 +92,10 @@ final class DrawerStackDataHelper {
         float storageMultiplier = 1.0f;
         float fluidMultiplier = 1.0f;
         boolean ironDowngrade = false;
+        boolean maxStorage = false;
         boolean creative = false;
         boolean voidUpgrade = false;
         boolean locked = false;
+        boolean oreDictionary = false;
     }
 }

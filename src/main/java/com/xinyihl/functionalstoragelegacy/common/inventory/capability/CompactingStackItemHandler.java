@@ -39,6 +39,16 @@ public class CompactingStackItemHandler extends CompactingInventoryHandler {
     }
 
     @Override
+    protected boolean allowsEquivalentItems() {
+        return upgradeState.oreDictionary;
+    }
+
+    @Override
+    protected boolean hasMaxStorage() {
+        return upgradeState.maxStorage;
+    }
+
+    @Override
     public boolean isVoid() {
         return upgradeState.voidUpgrade;
     }

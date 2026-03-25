@@ -58,6 +58,16 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
             }
 
             @Override
+            protected boolean allowsEquivalentItems() {
+                return CompactingDrawerTile.this.hasOreDictionaryUpgrade();
+            }
+
+            @Override
+            protected boolean hasMaxStorage() {
+                return CompactingDrawerTile.this.hasMaxStorageUpgrade();
+            }
+
+            @Override
             public boolean isVoid() {
                 return CompactingDrawerTile.this.isVoid();
             }
@@ -208,7 +218,7 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected boolean canApplyUpgradeState(UpgradeState state) {
-        if (state.creative) {
+        if (state.creative || state.maxStorage) {
             return true;
         }
         float baseSize = state.ironDowngrade ? 1.0f : 8.0f;

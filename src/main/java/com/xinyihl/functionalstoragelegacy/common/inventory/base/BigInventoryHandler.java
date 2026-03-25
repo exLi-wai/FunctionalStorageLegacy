@@ -69,7 +69,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                 return ItemStack.EMPTY;
             }
 
-            if (ItemUtil.areItemStacksEqual(bigStack.getStack(), stack)) {
+            if (ItemUtil.areItemStacksCompatible(bigStack.getStack(), stack, allowsEquivalentItems())) {
                 if (!simulate) {
                     bigStack.setAmount(Integer.MAX_VALUE);
                     onChange();
@@ -157,14 +157,14 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
             BigStack bigStack = this.storedStacks.get(slot);
             ItemStack fl = bigStack.getStack();
             if (isLocked() && fl.isEmpty()) return false;
-            return fl.isEmpty() || ItemUtil.areItemStacksEqual(fl, stack);
+            return fl.isEmpty() || ItemUtil.areItemStacksCompatible(fl, stack, allowsEquivalentItems());
         }
         return false;
     }
 
     private boolean isVoidValid(ItemStack stack) {
         for (BigStack storedStack : this.storedStacks) {
-            if (ItemUtil.areItemStacksEqual(storedStack.getStack(), stack)) return true;
+            if (ItemUtil.areItemStacksCompatible(storedStack.getStack(), stack, allowsEquivalentItems())) return true;
         }
         return false;
     }
@@ -206,7 +206,18 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
     public abstract float getMultiplier();
 
     public double getTotalAmount() {
+        if (hasMaxStorage()) {
+            return Integer.MAX_VALUE;
+        }
         return 64d * getMultiplier();
+    }
+
+    protected boolean allowsEquivalentItems() {
+        return false;
+    }
+
+    protected boolean hasMaxStorage() {
+        return false;
     }
 
     public abstract boolean isVoid();

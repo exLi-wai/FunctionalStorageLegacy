@@ -42,6 +42,11 @@ public class FluidDrawerStackItemHandler extends BigFluidHandler implements IFlu
     }
 
     @Override
+    protected boolean hasMaxStorage() {
+        return upgradeState.maxStorage;
+    }
+
+    @Override
     public boolean isVoid() {
         return upgradeState.voidUpgrade;
     }

@@ -38,6 +38,7 @@ item.functionalstoragelegacy.copper_upgrade.name=Copper Upgrade
 item.functionalstoragelegacy.gold_upgrade.name=Gold Upgrade
 item.functionalstoragelegacy.diamond_upgrade.name=Diamond Upgrade
 item.functionalstoragelegacy.netherite_upgrade.name=Netherite Upgrade
+item.functionalstoragelegacy.max_storage_upgrade.name=Max Storage Upgrade
 item.functionalstoragelegacy.creative_vending_upgrade.name=Creative Vending Upgrade
 item.functionalstoragelegacy.stone_generation_upgrade_t1.name=Stone Generation Upgrade T1
 item.functionalstoragelegacy.stone_generation_upgrade_t2.name=Stone Generation Upgrade T2
@@ -58,6 +59,7 @@ item.functionalstoragelegacy.redstone_upgrade.name=Redstone Upgrade
 item.functionalstoragelegacy.pulling_upgrade.name=Pulling Upgrade
 item.functionalstoragelegacy.pushing_upgrade.name=Pushing Upgrade
 item.functionalstoragelegacy.collector_upgrade.name=Collector Upgrade
+item.functionalstoragelegacy.ore_dictionary_upgrade.name=Ore Dictionary Upgrade
 item.functionalstoragelegacy.wireless_pulling_upgrade.name=Wireless Pulling Upgrade
 item.functionalstoragelegacy.wireless_pushing_upgrade.name=Wireless Pushing Upgrade
 
@@ -67,6 +69,8 @@ item.functionalstoragelegacy.linking_tool.name=Linking Tool
 
 # Tooltips
 item.functionalstoragelegacy.iron_downgrade.desc=Reduces drawer storage capacity
+item.functionalstoragelegacy.max_storage_upgrade.desc=Sets drawer storage to the maximum supported capacity
+item.functionalstoragelegacy.ore_dictionary_upgrade.desc=Allows equivalent Ore Dictionary items to be inserted and converted to the stored item
 item.functionalstoragelegacy.storage_upgrade.multiplier=Storage Multiplier: %s
 item.functionalstoragelegacy.upgrade.direction=Direction:
 item.functionalstoragelegacy.upgrade.direction.use=Sneak + right-click in air to set to your facing direction.

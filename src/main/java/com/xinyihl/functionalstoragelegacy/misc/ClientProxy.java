@@ -64,12 +64,14 @@ public class ClientProxy extends CommonProxy {
             registerItemModel(RegistrationHandler.GOLD_UPGRADE);
             registerItemModel(RegistrationHandler.DIAMOND_UPGRADE);
             registerItemModel(RegistrationHandler.NETHERITE_UPGRADE);
+            registerItemModel(RegistrationHandler.MAX_STORAGE_UPGRADE);
             registerItemModel(RegistrationHandler.CREATIVE_VENDING_UPGRADE);
             registerItemModel(RegistrationHandler.VOID_UPGRADE);
             registerItemModel(RegistrationHandler.REDSTONE_UPGRADE);
             registerItemModel(RegistrationHandler.PULLING_UPGRADE);
             registerItemModel(RegistrationHandler.PUSHING_UPGRADE);
             registerItemModel(RegistrationHandler.COLLECTOR_UPGRADE);
+            registerItemModel(RegistrationHandler.ORE_DICTIONARY_UPGRADE);
             registerItemModel(RegistrationHandler.WIRELESS_PULLING_UPGRADE);
             registerItemModel(RegistrationHandler.WIRELESS_PUSHING_UPGRADE);
             registerItemModel(RegistrationHandler.CONFIGURATION_TOOL);

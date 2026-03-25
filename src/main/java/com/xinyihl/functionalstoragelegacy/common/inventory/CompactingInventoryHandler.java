@@ -31,8 +31,8 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
         }
     }
 
-    private static boolean areItemStacksEqual(ItemStack a, ItemStack b) {
-        return ItemUtil.areItemStacksEqual(a, b);
+    private boolean areItemStacksCompatible(ItemStack a, ItemStack b) {
+        return ItemUtil.areItemStacksCompatible(a, b, allowsEquivalentItems());
     }
 
     @Override
@@ -69,7 +69,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
 
         if (slot < slots) {
             Result result = results.get(slot);
-            if (!result.getStack().isEmpty() && areItemStacksEqual(result.getStack(), stack)) {
+            if (!result.getStack().isEmpty() && areItemStacksCompatible(result.getStack(), stack)) {
                 int baseEquiv = stack.getCount() * result.getNeeded();
                 int maxBase = getSlotLimit(getBaseSlot()) * getBaseResult().getNeeded();
                 int currentBase = getTotalInBase();
@@ -139,12 +139,12 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
         if (slot >= slots) return false;
         Result result = results.get(slot);
         if (result.getStack().isEmpty()) return !isLocked();
-        return areItemStacksEqual(result.getStack(), stack);
+        return areItemStacksCompatible(result.getStack(), stack);
     }
 
     private boolean isVoidValid(ItemStack stack) {
         for (Result result : results) {
-            if (areItemStacksEqual(result.getStack(), stack)) return true;
+            if (areItemStacksCompatible(result.getStack(), stack)) return true;
         }
         return false;
     }
@@ -194,8 +194,19 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
 
     // Total capacity in base items
     public double getTotalCapacity() {
+        if (hasMaxStorage()) {
+            return Integer.MAX_VALUE;
+        }
         long i = results.stream().filter(R -> !R.getStack().isEmpty()).count();
         return 64 * Math.pow(9, --i) * getMultiplier();
+    }
+
+    protected boolean allowsEquivalentItems() {
+        return false;
+    }
+
+    protected boolean hasMaxStorage() {
+        return false;
     }
 
     public int getTotalInBase() {

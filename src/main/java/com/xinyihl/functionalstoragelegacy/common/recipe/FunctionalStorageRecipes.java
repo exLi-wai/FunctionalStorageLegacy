@@ -175,6 +175,12 @@ public final class FunctionalStorageRecipes {
                 'C', "chestWood",
                 'D', RegistrationHandler.DIAMOND_UPGRADE);
 
+        registerShaped(registry, "max_storage_upgrade", new ItemStack(RegistrationHandler.MAX_STORAGE_UPGRADE),
+            "SNS", "NUN", "SNS",
+            'S', Items.NETHER_STAR,
+            'N', "ingotNetherite",
+            'U', RegistrationHandler.NETHERITE_UPGRADE);
+
         registerShaped(registry, "redstone_upgrade", new ItemStack(RegistrationHandler.REDSTONE_UPGRADE),
                 "IBI", "CDC", "IBI",
                 'I', Items.REDSTONE,
@@ -202,6 +208,14 @@ public final class FunctionalStorageRecipes {
                 'B', Blocks.HOPPER,
                 'R', Items.REDSTONE,
                 'D', emptyDrawer);
+
+        registerShaped(registry, "ore_dictionary_upgrade", new ItemStack(RegistrationHandler.ORE_DICTIONARY_UPGRADE),
+            "RBR", "QDQ", "RER",
+            'R', Items.REDSTONE,
+            'B', Items.BOOK,
+            'Q', Items.QUARTZ,
+            'D', emptyDrawer,
+            'E', Items.EMERALD);
 
         registerShaped(registry, "wireless_pulling_upgrade", new ItemStack(RegistrationHandler.WIRELESS_PULLING_UPGRADE),
                 "EPE", "PUP", "EPE",

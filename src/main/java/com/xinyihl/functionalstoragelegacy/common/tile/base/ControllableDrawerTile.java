@@ -49,6 +49,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     private float fluidMultiplier = 1;
     private float rangeMultiplier = 1;
     private boolean hasIronDowngrade = false;
+    private boolean hasMaxStorageUpgrade = false;
+    private boolean hasOreDictionaryUpgrade = false;
 
     public ControllableDrawerTile() {
         this.drawerOptions = new DrawerOptions();
@@ -221,7 +223,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
                     ItemStack existing = storageUpgrades.getStackInSlot(i);
                     if (existing.getItem() instanceof StorageUpgradeItem) {
                         StorageUpgradeItem existingUpgrade = (StorageUpgradeItem) existing.getItem();
-                        if (newUpgrade.getTier().getMultiplier() > existingUpgrade.getTier().getMultiplier()
+                        if (newUpgrade.getTier().isHigherThan(existingUpgrade.getTier())
                                 && canReplaceStorageUpgrade(i, heldStack)) {
                             // Give back old upgrade
                             if (!player.inventory.addItemStackToInventory(existing.copy())) {
@@ -274,6 +276,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         this.fluidMultiplier = Math.max(state.fluidMultiplier, 0f);
         this.rangeMultiplier = Math.max(state.rangeMultiplier, 0f);
         this.hasIronDowngrade = state.ironDowngrade;
+        this.hasMaxStorageUpgrade = state.maxStorage;
+        this.hasOreDictionaryUpgrade = state.oreDictionary;
 
         needsUpgradeCache = false;
     }
@@ -333,6 +337,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
             ItemStack stack = utilityUpgrades.getStackInSlot(i);
             if (stack.getItem() == RegistrationHandler.VOID_UPGRADE) {
                 state.voidUpgrade = true;
+            } else if (stack.getItem() == RegistrationHandler.ORE_DICTIONARY_UPGRADE) {
+                state.oreDictionary = true;
             }
         }
 
@@ -347,6 +353,8 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
             StorageUpgradeItem upgrade = (StorageUpgradeItem) stack.getItem();
             if (upgrade.getTier() == StorageUpgradeItem.StorageTier.IRON) {
                 state.ironDowngrade = true;
+            } else if (upgrade.isMaxStorageUpgrade()) {
+                state.maxStorage = true;
             } else {
                 float tierMult = upgrade.getTier().getMultiplier();
                 state.storageMultiplier *= tierMult;
@@ -413,6 +421,16 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     public boolean hasIronDowngrade() {
         if (needsUpgradeCache) recalculateUpgrades();
         return hasIronDowngrade;
+    }
+
+    public boolean hasMaxStorageUpgrade() {
+        if (needsUpgradeCache) recalculateUpgrades();
+        return hasMaxStorageUpgrade;
+    }
+
+    public boolean hasOreDictionaryUpgrade() {
+        if (needsUpgradeCache) recalculateUpgrades();
+        return hasOreDictionaryUpgrade;
     }
 
     public boolean isCreative() {

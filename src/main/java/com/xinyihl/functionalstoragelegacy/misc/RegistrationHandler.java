@@ -76,6 +76,7 @@ public class RegistrationHandler {
     public static StorageUpgradeItem GOLD_UPGRADE;
     public static StorageUpgradeItem DIAMOND_UPGRADE;
     public static StorageUpgradeItem NETHERITE_UPGRADE;
+    public static StorageUpgradeItem MAX_STORAGE_UPGRADE;
     public static UpgradeItem CREATIVE_VENDING_UPGRADE;
     // Utility Upgrades
     public static UtilityUpgradeItem VOID_UPGRADE;
@@ -83,6 +84,7 @@ public class RegistrationHandler {
     public static UtilityUpgradeItem PULLING_UPGRADE;
     public static UtilityUpgradeItem PUSHING_UPGRADE;
     public static UtilityUpgradeItem COLLECTOR_UPGRADE;
+    public static OreDictionaryUpgradeItem ORE_DICTIONARY_UPGRADE;
     public static UtilityUpgradeItem WIRELESS_PULLING_UPGRADE;
     public static UtilityUpgradeItem WIRELESS_PUSHING_UPGRADE;
     public static StoneGenerationUpgradeItem STONE_GENERATION_UPGRADE_T1;
@@ -175,6 +177,10 @@ public class RegistrationHandler {
         NETHERITE_UPGRADE.setRegistryName("netherite_upgrade");
         NETHERITE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".netherite_upgrade");
 
+        MAX_STORAGE_UPGRADE = new StorageUpgradeItem(StorageUpgradeItem.StorageTier.MAX);
+        MAX_STORAGE_UPGRADE.setRegistryName("max_storage_upgrade");
+        MAX_STORAGE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".max_storage_upgrade");
+
         CREATIVE_VENDING_UPGRADE = new UpgradeItem(UpgradeItem.Type.STORAGE) {
         };
         CREATIVE_VENDING_UPGRADE.setRegistryName("creative_vending_upgrade");
@@ -205,6 +211,12 @@ public class RegistrationHandler {
         COLLECTOR_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.COLLECTOR);
         COLLECTOR_UPGRADE.setRegistryName("collector_upgrade");
         COLLECTOR_UPGRADE.setTranslationKey(Tags.MOD_ID + ".collector_upgrade");
+
+        ORE_DICTIONARY_UPGRADE = new OreDictionaryUpgradeItem();
+        ORE_DICTIONARY_UPGRADE.setRegistryName("ore_dictionary_upgrade");
+        ORE_DICTIONARY_UPGRADE.setTranslationKey(Tags.MOD_ID + ".ore_dictionary_upgrade");
+        ORE_DICTIONARY_UPGRADE.insertableInto(WoodDrawerTile.class, CompactingDrawerTile.class);
+        ORE_DICTIONARY_UPGRADE.incompatibleWith(ORE_DICTIONARY_UPGRADE);
 
         WIRELESS_PULLING_UPGRADE = new UtilityUpgradeItem(UtilityUpgradeItem.UtilityAction.WIRELESS_PULLING);
         WIRELESS_PULLING_UPGRADE.setRegistryName("wireless_pulling_upgrade");
@@ -291,12 +303,14 @@ public class RegistrationHandler {
                 GOLD_UPGRADE,
                 DIAMOND_UPGRADE,
                 NETHERITE_UPGRADE,
+                MAX_STORAGE_UPGRADE,
                 CREATIVE_VENDING_UPGRADE,
                 VOID_UPGRADE,
                 REDSTONE_UPGRADE,
                 PULLING_UPGRADE,
                 PUSHING_UPGRADE,
                 COLLECTOR_UPGRADE,
+                ORE_DICTIONARY_UPGRADE,
                 WIRELESS_PULLING_UPGRADE,
                 WIRELESS_PUSHING_UPGRADE,
                 CONFIGURATION_TOOL,

@@ -54,6 +54,11 @@ public class FluidDrawerTile extends ControllableDrawerTile {
             }
 
             @Override
+            protected boolean hasMaxStorage() {
+                return FluidDrawerTile.this.hasMaxStorageUpgrade();
+            }
+
+            @Override
             public boolean isVoid() {
                 return FluidDrawerTile.this.isVoid();
             }
@@ -222,7 +227,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected boolean canApplyUpgradeState(UpgradeState state) {
-        if (state.creative) {
+        if (state.creative || state.maxStorage) {
             return true;
         }
         float baseSize = state.ironDowngrade ? 1.0f : drawerType.getSlotAmount();

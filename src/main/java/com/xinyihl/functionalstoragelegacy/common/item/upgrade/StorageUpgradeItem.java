@@ -30,9 +30,13 @@ public class StorageUpgradeItem extends UpgradeItem {
         return tier;
     }
 
+    public boolean isMaxStorageUpgrade() {
+        return tier == StorageTier.MAX;
+    }
+
     @Override
     public boolean hasEffect(@Nonnull ItemStack stack) {
-        return tier == StorageTier.NETHERITE;
+        return tier == StorageTier.NETHERITE || tier == StorageTier.MAX;
     }
 
     @SideOnly(Side.CLIENT)
@@ -41,6 +45,8 @@ public class StorageUpgradeItem extends UpgradeItem {
         super.addInformation(stack, worldIn, tooltip, flagIn);
         if (tier == StorageTier.IRON) {
             tooltip.add(TextFormatting.GRAY + new TextComponentTranslation("item.functionalstoragelegacy.iron_downgrade.desc").getUnformattedText());
+        } else if (tier == StorageTier.MAX) {
+            tooltip.add(TextFormatting.GOLD + new TextComponentTranslation("item.functionalstoragelegacy.max_storage_upgrade.desc").getUnformattedText());
         } else {
             tooltip.add(TextFormatting.YELLOW + new TextComponentTranslation("item.functionalstoragelegacy.storage_upgrade.multiplier", TextFormatting.WHITE + "" + tier.getMultiplier() + "x").getUnformattedText());
         }
@@ -54,7 +60,8 @@ public class StorageUpgradeItem extends UpgradeItem {
         COPPER("copper"),
         GOLD("gold"),
         DIAMOND("diamond"),
-        NETHERITE("netherite");
+        NETHERITE("netherite"),
+        MAX("max");
 
         private final String name;
 
@@ -72,10 +79,16 @@ public class StorageUpgradeItem extends UpgradeItem {
                     return Configurations.STORAGE.diamondMultiplier;
                 case NETHERITE:
                     return Configurations.STORAGE.netheriteMultiplier;
+                case MAX:
+                    return 1.0f;
                 case IRON:
                 default:
                     return 1.0f;
             }
+        }
+
+        public boolean isHigherThan(StorageTier other) {
+            return ordinal() > other.ordinal();
         }
 
         public String getName() {

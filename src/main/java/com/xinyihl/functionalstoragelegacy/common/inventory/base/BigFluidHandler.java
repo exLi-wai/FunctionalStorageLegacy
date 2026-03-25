@@ -239,6 +239,9 @@ public abstract class BigFluidHandler implements IFluidHandler {
     }
 
     public int getCapacityPerTank() {
+        if (hasMaxStorage()) {
+            return Integer.MAX_VALUE / 2;
+        }
         float multiplier = getMultiplier();
         if (multiplier <= 0 || multiplier > Integer.MAX_VALUE) {
             multiplier = 1.0f;
@@ -391,6 +394,10 @@ public abstract class BigFluidHandler implements IFluidHandler {
     public abstract boolean isLocked();
 
     public abstract boolean isCreative();
+
+    protected boolean hasMaxStorage() {
+        return false;
+    }
 
     /**
      * Custom fluid tank with locking support.
