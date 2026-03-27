@@ -26,6 +26,7 @@ import java.util.*;
 public class ConnectedDrawers {
 
     private final List<Long> connectedDrawerPositions;
+    private final List<Long> linkedExtensionPositions;
     private final List<IItemHandler> itemHandlers;
     private final List<IFluidHandler> fluidHandlers;
     private BlockPos controllerPos;
@@ -33,6 +34,7 @@ public class ConnectedDrawers {
 
     public ConnectedDrawers() {
         this.connectedDrawerPositions = new ArrayList<>();
+        this.linkedExtensionPositions = new ArrayList<>();
         this.itemHandlers = new ArrayList<>();
         this.fluidHandlers = new ArrayList<>();
     }
@@ -70,6 +72,10 @@ public class ConnectedDrawers {
             positions.add(BlockPos.fromLong(l));
         }
         return positions;
+    }
+
+    public List<Long> getLinkedExtensionPositions() {
+        return linkedExtensionPositions;
     }
 
     /**
@@ -173,6 +179,17 @@ public class ConnectedDrawers {
         rebuild();
     }
 
+    public void addLinkedExtension(BlockPos pos) {
+        long posLong = pos.toLong();
+        if (!linkedExtensionPositions.contains(posLong)) {
+            linkedExtensionPositions.add(posLong);
+        }
+    }
+
+    public void removeLinkedExtension(BlockPos pos) {
+        linkedExtensionPositions.removeIf(l -> l == pos.toLong());
+    }
+
     public List<IItemHandler> getItemHandlers() {
         return itemHandlers;
     }
@@ -188,6 +205,11 @@ public class ConnectedDrawers {
             list.appendTag(new NBTTagLong(posLong));
         }
         nbt.setTag("Positions", list);
+        NBTTagList linkedExtensions = new NBTTagList();
+        for (Long posLong : linkedExtensionPositions) {
+            linkedExtensions.appendTag(new NBTTagLong(posLong));
+        }
+        nbt.setTag("LinkedExtensions", linkedExtensions);
         if (controllerPos != null) {
             nbt.setLong("ControllerPos", controllerPos.toLong());
         }
@@ -196,10 +218,17 @@ public class ConnectedDrawers {
 
     public void deserializeNBT(NBTTagCompound nbt) {
         connectedDrawerPositions.clear();
+        linkedExtensionPositions.clear();
         if (nbt.hasKey("Positions")) {
             NBTTagList list = nbt.getTagList("Positions", Constants.NBT.TAG_LONG);
             for (int i = 0; i < list.tagCount(); i++) {
                 connectedDrawerPositions.add(((NBTTagLong) list.get(i)).getLong());
+            }
+        }
+        if (nbt.hasKey("LinkedExtensions")) {
+            NBTTagList list = nbt.getTagList("LinkedExtensions", Constants.NBT.TAG_LONG);
+            for (int i = 0; i < list.tagCount(); i++) {
+                linkedExtensionPositions.add(((NBTTagLong) list.get(i)).getLong());
             }
         }
         if (nbt.hasKey("ControllerPos")) {

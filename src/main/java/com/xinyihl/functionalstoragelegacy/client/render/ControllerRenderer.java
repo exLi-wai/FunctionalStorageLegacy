@@ -84,7 +84,7 @@ public class ControllerRenderer extends TileEntitySpecialRenderer<DrawerControll
             highlightedBlocks.add(BlockPos.fromLong(posLong));
         }
 
-        for (Long posLong : te.getLinkedExtensionPositions()) {
+        for (Long posLong : te.getConnectedDrawers().getLinkedExtensionPositions()) {
             BlockPos extensionPos = BlockPos.fromLong(posLong);
             if (!(te.getWorld().getTileEntity(extensionPos) instanceof ControllerExtensionTile)) {
                 continue;
