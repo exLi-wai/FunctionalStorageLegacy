@@ -140,8 +140,8 @@ public class DrawerControllerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public void validate() {
-        super.validate();
+    public void onLoad() {
+        super.onLoad();
         rebuild();
     }
 

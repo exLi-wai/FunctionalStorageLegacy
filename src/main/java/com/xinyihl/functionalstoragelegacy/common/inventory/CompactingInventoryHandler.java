@@ -21,7 +21,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
     private final int slots;
     private boolean setup = false;
     // Total stored in base item units
-    private int totalInBase = 0;
+    private long totalInBase = 0;
 
     public CompactingInventoryHandler(int slots) {
         this.slots = slots;
@@ -53,11 +53,11 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
         if (slot >= slots) return ItemStack.EMPTY;
         Result result = results.get(slot);
         if (result.getStack().isEmpty()) return ItemStack.EMPTY;
-        int totalInBase = getTotalInBase();
-        int amountAtTier = totalInBase / result.getNeeded();
+        long totalInBase = getTotalInBase();
+        long amountAtTier = totalInBase / result.getNeeded();
         if (isCreative() && amountAtTier > 0) amountAtTier = Integer.MAX_VALUE;
         ItemStack out = result.getStack().copy();
-        out.setCount(amountAtTier);
+        out.setCount((int) Math.min(amountAtTier, Integer.MAX_VALUE));
         return out;
     }
 
@@ -70,11 +70,11 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
         if (slot < slots) {
             Result result = results.get(slot);
             if (!result.getStack().isEmpty() && areItemStacksCompatible(result.getStack(), stack)) {
-                int baseEquiv = stack.getCount() * result.getNeeded();
-                int maxBase = getSlotLimit(getBaseSlot()) * getBaseResult().getNeeded();
-                int currentBase = getTotalInBase();
-                int canInsert = Math.min(baseEquiv, maxBase - currentBase);
-                int insertedItems = canInsert / result.getNeeded();
+                long baseEquiv = (long) stack.getCount() * result.getNeeded();
+                long maxBase = getLongSlotLimit(getBaseSlot()) * getBaseResult().getNeeded();
+                long currentBase = getTotalInBase();
+                long canInsert = Math.min(baseEquiv, maxBase - currentBase);
+                int insertedItems = (int) (canInsert / result.getNeeded());
 
                 if (insertedItems <= 0) {
                     if (isVoid()) return ItemStack.EMPTY;
@@ -82,7 +82,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
                 }
 
                 if (!simulate && !isCreative()) {
-                    setTotalInBase(currentBase + insertedItems * result.getNeeded());
+                    setTotalInBase(currentBase + (long) insertedItems * result.getNeeded());
                     onChange();
                 }
 
@@ -103,14 +103,14 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
         Result result = results.get(slot).copy();
         if (result.getStack().isEmpty()) return ItemStack.EMPTY;
 
-        int totalBase = getTotalInBase();
-        int available = totalBase / result.getNeeded();
-        int toExtract = Math.min(amount, Math.min(available, result.getStack().getMaxStackSize()));
+        long totalBase = getTotalInBase();
+        long available = totalBase / result.getNeeded();
+        int toExtract = (int) Math.min(amount, Math.min(available, result.getStack().getMaxStackSize()));
 
         if (toExtract <= 0) return ItemStack.EMPTY;
 
         if (!simulate && !isCreative()) {
-            setTotalInBase(totalBase - toExtract * result.getNeeded());
+            setTotalInBase(totalBase - (long) toExtract * result.getNeeded());
             if (!isLocked() && totalInBase <= 0) {
                 resetConfiguration();
             }
@@ -124,14 +124,18 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
 
     @Override
     public int getSlotLimit(int slot) {
-        if (isCreative()) return Integer.MAX_VALUE;
-        if (slot >= slots) return Integer.MAX_VALUE;
+        return (int) Math.min(getLongSlotLimit(slot), Integer.MAX_VALUE);
+    }
+
+    public long getLongSlotLimit(int slot) {
+        if (isCreative()) return Long.MAX_VALUE;
+        if (slot >= slots) return Long.MAX_VALUE;
         double stackSize = 1;
         Result result = results.get(slot);
         if (!result.getStack().isEmpty()) {
             stackSize = result.getStack().getMaxStackSize() / 64D;
         }
-        return (int) Math.floor(getTotalCapacity() * stackSize / result.getNeeded());
+        return (long) Math.floor(getTotalCapacity() * stackSize / result.getNeeded());
     }
 
     @Override
@@ -152,7 +156,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
     public NBTTagCompound serializeNBT() {
         NBTTagCompound nbt = new NBTTagCompound();
         nbt.setBoolean("Setup", setup);
-        nbt.setInteger("TotalBase", getTotalInBase());
+        nbt.setLong("TotalBase", getTotalInBase());
         for (int i = 0; i < results.size(); i++) {
             NBTTagCompound entry = new NBTTagCompound();
             NBTTagCompound stackTag = new NBTTagCompound();
@@ -178,7 +182,7 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
                 results.get(i).setNeeded(entry.getInteger("Needed"));
             }
         }
-        setTotalInBase(nbt.getInteger("TotalBase"));
+        setTotalInBase(nbt.getLong("TotalBase"));
     }
 
     // Abstract methods
@@ -193,12 +197,12 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
     public abstract boolean isCreative();
 
     // Total capacity in base items
-    public double getTotalCapacity() {
+    public long getTotalCapacity() {
         if (hasMaxStorage()) {
-            return Integer.MAX_VALUE;
+            return Long.MAX_VALUE;
         }
         long i = results.stream().filter(R -> !R.getStack().isEmpty()).count();
-        return 64 * Math.pow(9, --i) * getMultiplier();
+        return (long) (64 * Math.pow(9, --i) * getMultiplier());
     }
 
     protected boolean allowsEquivalentItems() {
@@ -209,11 +213,11 @@ public abstract class CompactingInventoryHandler implements IItemHandler, ILocka
         return false;
     }
 
-    public int getTotalInBase() {
+    public long getTotalInBase() {
         return totalInBase;
     }
 
-    public void setTotalInBase(int totalInBase) {
+    public void setTotalInBase(long totalInBase) {
         this.totalInBase = Math.max(0, totalInBase);
     }
 

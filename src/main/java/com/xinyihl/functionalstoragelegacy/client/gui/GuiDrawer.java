@@ -65,12 +65,12 @@ public class GuiDrawer extends GuiContainer {
                         BigInventoryHandler.BigStack bs = handler.getBigStack(i);
                         if (bs.getAmount() > 0) {
                             ItemStack display = bs.getStack().copy();
-                            display.setCount(bs.getAmount());
+                            display.setCount((int) Math.min(bs.getAmount(), Integer.MAX_VALUE));
                             return display;
                         }
                         return ItemStack.EMPTY;
                     },
-                    i -> handler.getSlotLimit(i),
+                    i -> handler.getLongSlotLimit(i),
                     i -> {
                         if (woodDrawerTile.isLocked()) {
                             BigInventoryHandler.BigStack bs = handler.getBigStack(i);
@@ -102,7 +102,7 @@ public class GuiDrawer extends GuiContainer {
                     slotCount,
                     positions,
                     i -> handler.getStackInSlot(i),
-                    i -> handler.getSlotLimit(i),
+                    i -> handler.getLongSlotLimit(i),
                     i -> {
                         if (compactingTile.isLocked() && handler.isSetup()) {
                             java.util.List<CompactingInventoryHandler.Result> results = handler.getResults();
@@ -128,7 +128,7 @@ public class GuiDrawer extends GuiContainer {
                     type.getSlots(),
                     type.getSlotPosition(),
                     () -> handler,
-                    i -> handler.getCapacityPerTank()
+                    i -> handler.getLongCapacityPerTank()
             );
         } else if (tile instanceof EnderDrawerTile) {
             EnderDrawerTile enderTile = (EnderDrawerTile) tile;
@@ -146,9 +146,9 @@ public class GuiDrawer extends GuiContainer {
                     },
                     i -> {
                         if (enderTile.getItemHandler() != null) {
-                            return enderTile.getItemHandler().getSlotLimit(0);
+                            return (long) enderTile.getItemHandler().getSlotLimit(0);
                         }
-                        return 0;
+                        return 0L;
                     },
                     i -> {
                         if (enderTile.isLocked() && enderTile.getItemHandler() != null) {

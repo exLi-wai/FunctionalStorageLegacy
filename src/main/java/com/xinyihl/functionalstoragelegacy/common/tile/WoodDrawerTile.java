@@ -233,10 +233,10 @@ public class WoodDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected int calculateRedstoneSignal() {
-        int totalCapacity = 0;
-        int totalStored = 0;
+        long totalCapacity = 0;
+        long totalStored = 0;
         for (int i = 0; i < handler.getSlotCount(); i++) {
-            totalCapacity += handler.getSlotLimit(i);
+            totalCapacity += handler.getLongSlotLimit(i);
             totalStored += handler.getStoredStacks().get(i).getAmount();
         }
         if (totalCapacity == 0) return 0;
@@ -258,7 +258,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
             if (!bigStack.getStack().isEmpty()) {
                 stackSize = bigStack.getStack().getMaxStackSize() / 64D;
             }
-            int capacity = (int) Math.floor(64D * baseSize * state.storageMultiplier * stackSize);
+            long capacity = (long) Math.floor(64D * baseSize * state.storageMultiplier * stackSize);
             if (bigStack.getAmount() > capacity) {
                 return false;
             }

@@ -222,8 +222,8 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
             return true;
         }
         float baseSize = state.ironDowngrade ? 1.0f : 8.0f;
-        double totalCapacity = (getSlotCount() == 2 ? 64D * 9D : 64D * 9D * 9D) * baseSize * state.storageMultiplier;
-        return handler.getTotalInBase() <= Math.floor(totalCapacity);
+        long totalCapacity = (long) ((getSlotCount() == 2 ? 64D * 9D : 64D * 9D * 9D) * baseSize * state.storageMultiplier);
+        return handler.getTotalInBase() <= totalCapacity;
     }
 
     @Override
@@ -291,10 +291,10 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
     @Override
     protected int calculateRedstoneSignal() {
         if (!handler.isSetup()) return 0;
-        int totalCapacity = 0;
-        int totalStored = 0;
+        long totalCapacity = 0;
+        long totalStored = 0;
         for (int i = 0; i < handler.getSlots(); i++) {
-            totalCapacity += handler.getSlotLimit(i);
+            totalCapacity += handler.getLongSlotLimit(i);
             totalStored += handler.getStackInSlot(i).getCount();
         }
         if (totalCapacity == 0) return 0;

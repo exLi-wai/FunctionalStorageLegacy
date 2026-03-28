@@ -239,14 +239,18 @@ public abstract class BigFluidHandler implements IFluidHandler {
     }
 
     public int getCapacityPerTank() {
+        return (int) Math.min(getLongCapacityPerTank(), Integer.MAX_VALUE / 2);
+    }
+
+    public long getLongCapacityPerTank() {
         if (hasMaxStorage()) {
-            return Integer.MAX_VALUE / 2;
+            return Long.MAX_VALUE;
         }
         float multiplier = getMultiplier();
-        if (multiplier <= 0 || multiplier > Integer.MAX_VALUE) {
+        if (multiplier <= 0) {
             multiplier = 1.0f;
         }
-        return (int) Math.min(multiplier * 1000, (float) Integer.MAX_VALUE / 2);
+        return (long) (multiplier * 1000);
     }
 
     public List<CustomFluidTank> getTanks() {

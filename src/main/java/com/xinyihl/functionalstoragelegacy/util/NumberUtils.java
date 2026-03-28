@@ -1,54 +1,22 @@
 package com.xinyihl.functionalstoragelegacy.util;
 
-import java.text.DecimalFormat;
-
 public class NumberUtils {
 
-    private static final DecimalFormat formatterWithUnits = new DecimalFormat("####0.#");
-    private static final DecimalFormat blankFormatter = new DecimalFormat();
+    private static final String[] UNITS = {"", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"};
 
-    public static String getFormattedNumber(int number) {
-        return blankFormatter.format(number);
-    }
-
-    public static String getFormattedFluid(int number) {
-        return blankFormatter.format(number) + "mb";
-    }
-
-    public static String getFormatedBigNumber(int number) {
-        return getFormattedBigNumber(number);
-    }
-
-    public static String getFormattedBigNumber(long number) {
-        if (number >= 1000000000L) {
-            float numb = number / 1000000000F;
-            return formatterWithUnits.format(numb) + "B";
-        } else if (number >= 1000000L) {
-            float numb = number / 1000000F;
-            if (number > 100000000L) numb = Math.round(numb);
-            return formatterWithUnits.format(numb) + "M";
-        } else if (number >= 1000L) {
-            float numb = number / 1000F;
-            if (number > 100000L) numb = Math.round(numb);
-            return formatterWithUnits.format(numb) + "K";
+    public static String formatCompact(long amount) {
+        if (amount == 0) return "0";
+        int unitIndex = 0;
+        double value = amount;
+        while (value >= 1000 && unitIndex < UNITS.length - 1) {
+            value /= 1000;
+            unitIndex++;
         }
-        return String.valueOf(number);
+        if (unitIndex == 0) return String.valueOf(amount);
+        return String.format("%.2f%s", value, UNITS[unitIndex]);
     }
 
-    public static String getFormatedFluidBigNumber(int number) {
-        if (number < 1000) return number + " mB";
-        if (number >= 1000000000) {
-            float numb = number / 1000000000F;
-            return formatterWithUnits.format(numb) + "M B";
-        } else if (number >= 1000000) {
-            float numb = number / 1000000F;
-            if (number > 100000000) numb = Math.round(numb);
-            return formatterWithUnits.format(numb) + "K B";
-        } else if (number >= 1000) {
-            float numb = number / 1000F;
-            if (number > 100000) numb = Math.round(numb);
-            return formatterWithUnits.format(numb) + " B";
-        }
-        return number + " B";
+    public static String formatCompactFluid(long amount) {
+        return formatCompact(amount) + "B";
     }
 }

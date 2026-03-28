@@ -34,12 +34,12 @@ public class FluidDrawerInfoGuiAddon {
     private final int slotAmount;
     private final Function<Integer, Pair<Integer, Integer>> slotPosition;
     private final Supplier<BigFluidHandler> fluidHandlerSupplier;
-    private final Function<Integer, Integer> slotMaxAmount;
+    private final Function<Integer, Long> slotMaxAmount;
 
     public FluidDrawerInfoGuiAddon(int posX, int posY, ResourceLocation gui, int slotAmount,
                                    Function<Integer, Pair<Integer, Integer>> slotPosition,
                                    Supplier<BigFluidHandler> fluidHandlerSupplier,
-                                   Function<Integer, Integer> slotMaxAmount) {
+                                   Function<Integer, Long> slotMaxAmount) {
         this.posX = posX;
         this.posY = posY;
         this.gui = gui;
@@ -123,9 +123,9 @@ public class FluidDrawerInfoGuiAddon {
             if (fluidStack != null && fluidStack.amount > 0) {
                 int x = guiX + slotPosition.apply(i).getLeft() + posX;
                 int y = guiY + slotPosition.apply(i).getRight() + posY;
-                String amount = NumberUtils.getFormatedFluidBigNumber(fluidStack.amount)
-                        + "/" + NumberUtils.getFormatedFluidBigNumber(slotMaxAmount.apply(i));
-                float scale = 0.5f;
+                String amount = NumberUtils.formatCompactFluid(fluidStack.amount)
+                        + "/" + NumberUtils.formatCompactFluid(slotMaxAmount.apply(i));
+                float scale = 1f;
                 GlStateManager.pushMatrix();
                 GlStateManager.translate(0, 0, 200);
                 GlStateManager.scale(scale, scale, scale);
@@ -171,8 +171,8 @@ public class FluidDrawerInfoGuiAddon {
                             + "§f" + over.getLocalizedName());
                     FluidStack actual = fluidHandlerSupplier.get().getTankFluid(i);
                     int actualAmount = actual != null ? actual.amount : 0;
-                    String amountStr = NumberUtils.getFormattedFluid(actualAmount)
-                            + "/" + NumberUtils.getFormattedFluid(slotMaxAmount.apply(i));
+                    String amountStr = NumberUtils.formatCompactFluid(actualAmount)
+                            + "/" + NumberUtils.formatCompactFluid(slotMaxAmount.apply(i));
                     tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.amount")
                             + "§f" + amountStr);
                 }

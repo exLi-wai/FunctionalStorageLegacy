@@ -12,7 +12,7 @@ public abstract class EnderInventoryHandler extends BigInventoryHandler {
     private boolean locked = false;
     private boolean isVoid = false;
     private boolean isCreative = false;
-    private float multiplier = 1;
+    private float multiplier = 64 * 4;
     public boolean needUpdate = false;
 
     public EnderInventoryHandler() {

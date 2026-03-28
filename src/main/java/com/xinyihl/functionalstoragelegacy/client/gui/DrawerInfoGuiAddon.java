@@ -27,13 +27,13 @@ public class DrawerInfoGuiAddon {
     private final int slotAmount;
     private final Function<Integer, Pair<Integer, Integer>> slotPosition;
     private final Function<Integer, ItemStack> slotStack;
-    private final Function<Integer, Integer> slotMaxAmount;
+    private final Function<Integer, Long> slotMaxAmount;
     private final Function<Integer, ItemStack> slotLockedDisplay;
 
     public DrawerInfoGuiAddon(int posX, int posY, ResourceLocation gui, int slotAmount,
                               Function<Integer, Pair<Integer, Integer>> slotPosition,
                               Function<Integer, ItemStack> slotStack,
-                              Function<Integer, Integer> slotMaxAmount,
+                              Function<Integer, Long> slotMaxAmount,
                               Function<Integer, ItemStack> slotLockedDisplay) {
         this.posX = posX;
         this.posY = posY;
@@ -72,9 +72,9 @@ public class DrawerInfoGuiAddon {
                 mc.getRenderItem().renderItemAndEffectIntoGUI(itemStack, x, y);
                 RenderHelper.disableStandardItemLighting();
 
-                String amount = NumberUtils.getFormatedBigNumber(slotStack.apply(i).getCount())
-                        + "/" + NumberUtils.getFormatedBigNumber(slotMaxAmount.apply(i));
-                float scale = 0.5f;
+                String amount = NumberUtils.formatCompact(slotStack.apply(i).getCount())
+                        + "/" + NumberUtils.formatCompact(slotMaxAmount.apply(i));
+                float scale = 1f;
                 GlStateManager.pushMatrix();
                 GlStateManager.translate(0, 0, 200);
                 GlStateManager.scale(scale, scale, scale);
@@ -118,8 +118,8 @@ public class DrawerInfoGuiAddon {
                 } else {
                     tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.item")
                             + "§f" + over.getDisplayName());
-                    String amountStr = NumberUtils.getFormattedNumber(slotStack.apply(i).getCount())
-                            + "/" + NumberUtils.getFormattedNumber(slotMaxAmount.apply(i));
+                    String amountStr = NumberUtils.formatCompact(slotStack.apply(i).getCount())
+                            + "/" + NumberUtils.formatCompact(slotMaxAmount.apply(i));
                     tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.amount")
                             + "§f" + amountStr);
                 }

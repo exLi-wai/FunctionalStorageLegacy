@@ -9,6 +9,7 @@ import com.xinyihl.functionalstoragelegacy.common.inventory.capability.Compactin
 import com.xinyihl.functionalstoragelegacy.common.inventory.capability.DrawerStackCapabilityProvider;
 import com.xinyihl.functionalstoragelegacy.common.inventory.capability.DrawerStackItemHandler;
 import com.xinyihl.functionalstoragelegacy.common.inventory.capability.FluidDrawerStackItemHandler;
+import com.xinyihl.functionalstoragelegacy.util.NumberUtils;
 import net.minecraft.block.Block;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemBlock;
@@ -71,7 +72,7 @@ public class DrawerItemBlock extends ItemBlock {
                 for (int slot = 0; slot < handler.getSlots(); slot++) {
                     ItemStack stored = handler.getStackInSlot(slot);
                     if (!stored.isEmpty() && stored.getCount() > 0) {
-                        lines.add(stored.getDisplayName() + "x" + formatCompact(stored.getCount()));
+                        lines.add(stored.getDisplayName() + "x" + NumberUtils.formatCompact(stored.getCount()));
                     }
                 }
             }
@@ -94,17 +95,17 @@ public class DrawerItemBlock extends ItemBlock {
                     NBTTagCompound entry = bigItems.getCompoundTag(key);
                     NBTTagCompound stackTag = entry.getCompoundTag("Stack");
                     if (stackTag.getKeySet().isEmpty()) continue;
-                    int amount = entry.getInteger("Amount");
+                    long amount = entry.getLong("Amount");
                     if (amount <= 0) continue;
                     ItemStack item = new ItemStack(stackTag);
-                    lines.add(item.getDisplayName() + "x" + formatCompact(amount));
+                    lines.add(item.getDisplayName() + "x" + NumberUtils.formatCompact(amount));
                 }
             }
         }
 
         if (tileData.hasKey("CompactingInv")) {
             NBTTagCompound compactingInv = tileData.getCompoundTag("CompactingInv");
-            int totalBase = compactingInv.getInteger("TotalBase");
+            long totalBase = compactingInv.getLong("TotalBase");
             int slotCount = tileData.hasKey("SlotCount") ? tileData.getInteger("SlotCount") : 3;
             for (int i = 0; i < slotCount; i++) {
                 String key = "Result_" + i;
@@ -113,10 +114,10 @@ public class DrawerItemBlock extends ItemBlock {
                 NBTTagCompound stackTag = entry.getCompoundTag("Stack");
                 if (stackTag.getKeySet().isEmpty()) continue;
                 int needed = Math.max(1, entry.getInteger("Needed"));
-                int amount = totalBase / needed;
+                long amount = totalBase / needed;
                 if (amount <= 0) continue;
                 ItemStack item = new ItemStack(stackTag);
-                lines.add(item.getDisplayName() + "x" + formatCompact(amount));
+                lines.add(item.getDisplayName() + "x" + NumberUtils.formatCompact(amount));
             }
         }
 
@@ -128,7 +129,7 @@ public class DrawerItemBlock extends ItemBlock {
                 NBTTagCompound tankTag = fluidInv.getCompoundTag(key);
                 FluidStack fluid = FluidStack.loadFluidStackFromNBT(tankTag);
                 if (fluid == null || fluid.amount <= 0) continue;
-                lines.add(fluid.getLocalizedName() + "x" + formatCompact(fluid.amount));
+                lines.add(fluid.getLocalizedName() + "x" + NumberUtils.formatCompact(fluid.amount));
             }
         }
 
@@ -157,11 +158,5 @@ public class DrawerItemBlock extends ItemBlock {
             return new FluidDrawerStackItemHandler(stack, drawerType);
         }
         return null;
-    }
-
-    private String formatCompact(long amount) {
-        if (amount < 1000) return String.valueOf(amount);
-        if (amount % 1000 == 0) return (amount / 1000) + "k";
-        return String.format("%.1fk", amount / 1000.0).replace(".0k", "k");
     }
 }

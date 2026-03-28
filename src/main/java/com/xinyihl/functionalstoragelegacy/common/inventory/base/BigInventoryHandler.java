@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Core large-capacity item storage handler.
- * Each slot can store items beyond vanilla's 64 limit using BigStack (ItemStack + int amount).
+ * Each slot can store items beyond vanilla's 64 limit using BigStack (ItemStack + long amount).
  * Supports locked/void/creative modes.
  */
 public abstract class BigInventoryHandler implements IItemHandler, ILockable {
@@ -63,7 +63,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                     ItemStack template = stack.copy();
                     template.setCount(stack.getMaxStackSize());
                     bigStack.setStack(template);
-                    bigStack.setAmount(Integer.MAX_VALUE);
+                    bigStack.setAmount(Long.MAX_VALUE);
                     onChange();
                 }
                 return ItemStack.EMPTY;
@@ -71,7 +71,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
 
             if (ItemUtil.areItemStacksCompatible(bigStack.getStack(), stack, allowsEquivalentItems())) {
                 if (!simulate) {
-                    bigStack.setAmount(Integer.MAX_VALUE);
+                    bigStack.setAmount(Long.MAX_VALUE);
                     onChange();
                 }
                 return ItemStack.EMPTY;
@@ -84,7 +84,8 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
 
         if (isValid(slot, stack)) {
             BigStack bigStack = this.storedStacks.get(slot);
-            int inserted = Math.max(0, Math.min(getSlotLimit(slot) - bigStack.getAmount(), stack.getCount()));
+            long limit = getLongSlotLimit(slot);
+            int inserted = (int) Math.max(0, Math.min(limit - bigStack.getAmount(), stack.getCount()));
             if (inserted == 0 && !isVoid()) return stack;
             if (!simulate) {
                 if (bigStack.getStack().isEmpty()) {
@@ -93,7 +94,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                     bigStack.setStack(template);
                 }
                 if (inserted > 0) {
-                    bigStack.setAmount(Math.min(bigStack.getAmount() + inserted, getSlotLimit(slot)));
+                    bigStack.setAmount(Math.min(bigStack.getAmount() + inserted, limit));
                 }
                 onChange();
             }
@@ -115,7 +116,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
             amount = Math.min(amount, bigStack.getStack().getMaxStackSize());
             if (!isCreative() && bigStack.getAmount() <= amount) {
                 ItemStack out = bigStack.getStack().copy();
-                int newAmount = bigStack.getAmount();
+                int newAmount = (int) Math.min(bigStack.getAmount(), Integer.MAX_VALUE);
                 if (!simulate && !isCreative()) {
                     if (!isLocked()) bigStack.setStack(ItemStack.EMPTY);
                     bigStack.setAmount(0);
@@ -138,13 +139,17 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
 
     @Override
     public int getSlotLimit(int slot) {
-        if (isCreative()) return Integer.MAX_VALUE;
-        if (slots == slot) return Integer.MAX_VALUE;
+        return (int) Math.min(getLongSlotLimit(slot), Integer.MAX_VALUE);
+    }
+
+    public long getLongSlotLimit(int slot) {
+        if (isCreative()) return Long.MAX_VALUE;
+        if (slots == slot) return Long.MAX_VALUE;
         double stackSize = 1;
         if (!getStoredStacks().get(slot).getStack().isEmpty()) {
             stackSize = getStoredStacks().get(slot).getStack().getMaxStackSize() / 64D;
         }
-        return (int) Math.floor(getTotalAmount() * stackSize);
+        return (long) Math.floor(getTotalAmount() * stackSize);
     }
 
     @Override
@@ -179,7 +184,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                 this.storedStacks.get(i).getStack().writeToNBT(stackTag);
             }
             bigStack.setTag(STACK, stackTag);
-            bigStack.setInteger(AMOUNT, this.storedStacks.get(i).getAmount());
+            bigStack.setLong(AMOUNT, this.storedStacks.get(i).getAmount());
             items.setTag(String.valueOf(i), bigStack);
         }
         compoundTag.setTag(BIG_ITEMS, items);
@@ -196,7 +201,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                 NBTTagCompound stackTag = entry.getCompoundTag(STACK);
                 ItemStack stack = stackTag.getKeySet().isEmpty() ? ItemStack.EMPTY : new ItemStack(stackTag);
                 this.storedStacks.get(index).setStack(stack);
-                this.storedStacks.get(index).setAmount(entry.getInteger(AMOUNT));
+                this.storedStacks.get(index).setAmount(entry.getLong(AMOUNT));
             }
         }
     }
@@ -205,11 +210,11 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
 
     public abstract float getMultiplier();
 
-    public double getTotalAmount() {
+    public long getTotalAmount() {
         if (hasMaxStorage()) {
-            return Integer.MAX_VALUE;
+            return Long.MAX_VALUE;
         }
-        return 64d * getMultiplier();
+        return (long) (64d * getMultiplier());
     }
 
     protected boolean allowsEquivalentItems() {
@@ -248,15 +253,15 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
 
         private ItemStack stack;
         private ItemStack slotStack;
-        private int amount;
+        private long amount;
 
-        public BigStack(ItemStack stack, int amount) {
+        public BigStack(ItemStack stack, long amount) {
             this.amount = amount;
             if (!stack.isEmpty()) {
                 this.stack = stack.copy();
                 if (amount > 0) {
                     this.slotStack = stack.copy();
-                    this.slotStack.setCount(amount);
+                    this.slotStack.setCount((int) Math.min(amount, Integer.MAX_VALUE));
                 } else {
                     this.slotStack = ItemStack.EMPTY;
                 }
@@ -275,7 +280,7 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
                 this.stack = stack.copy();
                 if (this.amount > 0) {
                     this.slotStack = this.stack.copy();
-                    this.slotStack.setCount(this.amount);
+                    this.slotStack.setCount((int) Math.min(this.amount, Integer.MAX_VALUE));
                 } else {
                     this.slotStack = ItemStack.EMPTY;
                 }
@@ -285,15 +290,15 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
             }
         }
 
-        public int getAmount() {
+        public long getAmount() {
             return amount;
         }
 
-        public void setAmount(int amount) {
+        public void setAmount(long amount) {
             this.amount = Math.max(amount, 0);
             if (!this.stack.isEmpty() && this.amount > 0) {
                 this.slotStack = this.stack.copy();
-                this.slotStack.setCount(this.amount);
+                this.slotStack.setCount((int) Math.min(this.amount, Integer.MAX_VALUE));
             } else {
                 this.slotStack = ItemStack.EMPTY;
             }

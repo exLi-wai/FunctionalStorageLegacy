@@ -8,6 +8,7 @@ import com.xinyihl.functionalstoragelegacy.common.tile.WoodDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.compact.CompactingDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.controller.DrawerControllerTile;
+import com.xinyihl.functionalstoragelegacy.util.NumberUtils;
 import mcjty.theoneprobe.api.*;
 import mcjty.theoneprobe.config.Config;
 import net.minecraft.block.state.IBlockState;
@@ -38,25 +39,6 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
 
     protected String i18n(String key) {
         return "{*tooltip.functionalstoragelegacy." + key + "*}";
-    }
-
-    public String formatCompact(long amount) {
-        try {
-            if (amount == 0) {
-                return "0";
-            }
-            String[] units = {"", "k", "m", "g", "t", "p", "e", "z", "y", "r", "q"};
-            long k = 1000;
-            int unitIndex = 0;
-            long value = amount;
-            while (value >= k && unitIndex < units.length - 1) {
-                value /= k;
-                unitIndex++;
-            }
-            return value + units[unitIndex];
-        } catch (Exception e) {
-            return "0";
-        }
     }
 
     private long safeAmount(long value) {
@@ -100,7 +82,7 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
             for (int i = 0; i < handler.getSlotCount(); i++) {
                 BigInventoryHandler.BigStack big = handler.getBigStack(i);
                 if (!big.getStack().isEmpty() && big.getAmount() > 0) {
-                    items.add(new ItemEntry(iconStack(big.getStack()), safeAmount(big.getAmount()), safeCapacity(handler.getSlotLimit(i))));
+                    items.add(new ItemEntry(iconStack(big.getStack()), safeAmount(big.getAmount()), safeCapacity(handler.getLongSlotLimit(i))));
                 }
             }
             return items;
@@ -113,7 +95,7 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
                 for (int i = 0; i < handler.getSlotCount(); i++) {
                     BigInventoryHandler.BigStack big = handler.getBigStack(i);
                     if (!big.getStack().isEmpty() && big.getAmount() > 0) {
-                        items.add(new ItemEntry(iconStack(big.getStack()), safeAmount(big.getAmount()), safeCapacity(handler.getSlotLimit(i))));
+                        items.add(new ItemEntry(iconStack(big.getStack()), safeAmount(big.getAmount()), safeCapacity(handler.getLongSlotLimit(i))));
                     }
                 }
             }
@@ -125,7 +107,7 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
             for (int i = 0; i < handler.getSlots(); i++) {
                 ItemStack stack = handler.getStackInSlot(i);
                 if (!stack.isEmpty() && stack.getCount() > 0) {
-                    items.add(new ItemEntry(iconStack(stack), safeAmount(stack.getCount()), safeCapacity(handler.getSlotLimit(i))));
+                    items.add(new ItemEntry(iconStack(stack), safeAmount(stack.getCount()), safeCapacity(handler.getLongSlotLimit(i))));
                 }
             }
             return items;
@@ -187,7 +169,7 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
                     .item(item.stack)
                     .vertical(probeInfo.defaultLayoutStyle().spacing(0))
                     .itemLabel(item.stack)
-                    .text(TextStyleClass.INFO + formatCompact(item.amount) + " / " + formatCompact(item.capacity));
+                    .text(TextStyleClass.INFO + NumberUtils.formatCompact(item.amount) + " / " + NumberUtils.formatCompact(item.capacity));
         }
 
         if (items.size() > MAX_RENDERED_ENTRIES) {
@@ -205,7 +187,7 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
         int rendered = Math.min(fluids.size(), MAX_RENDERED_ENTRIES);
         for (int i = 0; i < rendered; i++) {
             FluidEntry fluid = fluids.get(i);
-            vertical.text(TextStyleClass.INFO + fluid.name + " " + formatCompact(fluid.amount) + " / " + formatCompact(fluid.capacity) + " mB")
+            vertical.text(TextStyleClass.INFO + fluid.name + " " + NumberUtils.formatCompactFluid(fluid.amount) + " / " + NumberUtils.formatCompactFluid(fluid.capacity))
                     .progress(fluid.amount, fluid.capacity,
                             probeInfo.defaultProgressStyle()
                                     .numberFormat(NumberFormat.COMPACT)

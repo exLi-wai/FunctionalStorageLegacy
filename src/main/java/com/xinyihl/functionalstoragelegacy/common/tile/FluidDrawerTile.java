@@ -215,8 +215,8 @@ public class FluidDrawerTile extends ControllableDrawerTile {
 
     @Override
     protected int calculateRedstoneSignal() {
-        int totalCapacity = 0;
-        int totalStored = 0;
+        long totalCapacity = 0;
+        long totalStored = 0;
         for (BigFluidHandler.CustomFluidTank tank : fluidHandler.getTanks()) {
             totalCapacity += tank.getCapacity();
             if (tank.getFluid() != null) totalStored += tank.getFluid().amount;
@@ -231,7 +231,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
             return true;
         }
         float baseSize = state.ironDowngrade ? 1.0f : drawerType.getSlotAmount();
-        int capacityPerTank = (int) Math.floor(baseSize * state.fluidMultiplier * 1000D);
+        long capacityPerTank = (long) Math.floor(baseSize * state.fluidMultiplier * 1000D);
         for (BigFluidHandler.CustomFluidTank tank : fluidHandler.getTanks()) {
             if (tank.getFluid() != null && tank.getFluid().amount > capacityPerTank) {
                 return false;

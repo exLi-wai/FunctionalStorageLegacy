@@ -144,7 +144,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         if (stack.isEmpty()) return;
 
         long count = bigStack.getAmount();
-        int maxAmount = handler.getSlotLimit(slot);
+        long maxAmount = handler.getLongSlotLimit(slot);
         float progress = maxAmount > 0 ? Math.min(1.0f, count / (float) maxAmount) : 0;
         renderIndicatorOnFace(posX, posY, slotScale, progress, options, Z_OFFSET_INDICATOR);
         if (showRender) {
@@ -188,8 +188,8 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         ItemStack stack = result.getStack();
         if (stack.isEmpty()) return;
 
-        int count = handler.getStackInSlot(slot).getCount();
-        int maxAmount = handler.getSlotLimit(slot);
+        long count = handler.getStackInSlot(slot).getCount();
+        long maxAmount = handler.getLongSlotLimit(slot);
         float progress = maxAmount > 0 ? Math.min(1.0f, count / (float) maxAmount) : 0;
         renderIndicatorOnFace(posX, posY, 0.5F, progress, options, Z_OFFSET_INDICATOR);
         if (showRender) {
@@ -258,7 +258,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
         FluidStack fluid = handler.getTankFluid(slot);
         if (fluid == null || fluid.amount <= 0) return;
 
-        int maxAmount = handler.getCapacityPerTank();
+        long maxAmount = handler.getLongCapacityPerTank();
         float progress = maxAmount > 0 ? Math.min(1.0f, fluid.amount / (float) maxAmount) : 0;
         renderIndicatorOnFace(posX, posY, slotScale, progress, options, Z_OFFSET_INDICATOR);
         if (showRender) {
@@ -449,7 +449,7 @@ public class DrawerRenderer extends TileEntitySpecialRenderer<ControllableDrawer
     // ============================================================
     private void renderCountOnFace(long count, float posX, float posY, float slotScale, float maxScale, float zOffset) {
         if (count <= 0) return;
-        String text = NumberUtils.getFormattedBigNumber(count);
+        String text = NumberUtils.formatCompact(count);
         FontRenderer fontRenderer = Minecraft.getMinecraft().fontRenderer;
 
         float offsetX = posX * 16.0f;
