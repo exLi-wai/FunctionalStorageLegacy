@@ -86,6 +86,10 @@ public final class Configurations {
         @Config.Name("enableTOPCompatibility")
         @Config.Comment("Enable The One Probe compatibility integration")
         public boolean enableTOPCompatibility = true;
+
+        @Config.Name("enableAE2Compatibility")
+        @Config.Comment("Enable AE2 Extended Life storage bus compatibility for drawers and controllers")
+        public boolean enableAE2Compatibility = true;
     }
 
     public static final class Storage {

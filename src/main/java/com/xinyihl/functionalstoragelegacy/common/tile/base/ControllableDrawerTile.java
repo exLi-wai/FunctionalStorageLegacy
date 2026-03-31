@@ -8,6 +8,7 @@ import com.xinyihl.functionalstoragelegacy.common.item.ConfigurationToolItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StorageUpgradeItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UpgradeItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UtilityUpgradeItem;
+import com.xinyihl.functionalstoragelegacy.common.integration.ae2.AE2Compat;
 import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import com.xinyihl.functionalstoragelegacy.misc.RegistrationHandler;
 import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
@@ -24,6 +25,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
 
@@ -541,6 +543,32 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     @Override
     public void onDataPacket(@Nonnull NetworkManager net, SPacketUpdateTileEntity pkt) {
         readFromNBT(pkt.getNbtCompound());
+    }
+
+    // AE2 integration - lazy-initialized accessor (stored as Object to avoid class loading when AE2 absent)
+    private Object ae2Accessor;
+
+    @Override
+    public boolean hasCapability(@Nonnull Capability<?> capability, @javax.annotation.Nullable EnumFacing facing) {
+        if (AE2Compat.isLoaded() && AE2Compat.isStorageAccessorCapability(capability)) return true;
+        return super.hasCapability(capability, facing);
+    }
+
+    @javax.annotation.Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T getCapability(@Nonnull Capability<T> capability, @javax.annotation.Nullable EnumFacing facing) {
+        if (AE2Compat.isLoaded() && AE2Compat.isStorageAccessorCapability(capability)) {
+            if (ae2Accessor == null) {
+                ae2Accessor = AE2Compat.createAccessor(this);
+            }
+            return (T) ae2Accessor;
+        }
+        return super.getCapability(capability, facing);
+    }
+
+    public void invalidateAE2Accessor() {
+        ae2Accessor = null;
     }
 
     /**
