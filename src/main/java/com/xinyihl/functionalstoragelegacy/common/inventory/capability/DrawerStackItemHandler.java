@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.capability;
 
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -36,8 +37,7 @@ public class DrawerStackItemHandler extends BigInventoryHandler {
 
     @Override
     public float getMultiplier() {
-        float baseSize = upgradeState.ironDowngrade ? 1.0f : drawerType.getSlotAmount();
-        return baseSize * upgradeState.storageMultiplier;
+        return upgradeState.calculate(ModifierType.ITEM_STORAGE, drawerType.getSlotAmount());
     }
 
     @Override

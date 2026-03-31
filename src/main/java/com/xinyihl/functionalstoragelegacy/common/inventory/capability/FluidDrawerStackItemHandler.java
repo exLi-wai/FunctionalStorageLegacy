@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.capability;
 
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -37,8 +38,7 @@ public class FluidDrawerStackItemHandler extends BigFluidHandler implements IFlu
 
     @Override
     public float getMultiplier() {
-        float baseSize = upgradeState.ironDowngrade ? 1.0f : drawerType.getSlotAmount();
-        return baseSize * upgradeState.fluidMultiplier;
+        return upgradeState.calculate(ModifierType.FLUID_STORAGE, drawerType.getSlotAmount());
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.xinyihl.functionalstoragelegacy.common.tile.base;
 
 import com.xinyihl.functionalstoragelegacy.FunctionalStorageLegacy;
 import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.client.render.DrawerOptions;
 import com.xinyihl.functionalstoragelegacy.common.item.ConfigurationToolItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StorageUpgradeItem;
@@ -45,10 +46,7 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
     protected boolean isVoid = false;
     protected boolean isLocked = false;
     protected boolean needsUpgradeCache = true;
-    private float storageMultiplier = 1;
-    private float fluidMultiplier = 1;
-    private float rangeMultiplier = 1;
-    private boolean hasIronDowngrade = false;
+    private UpgradeState cachedUpgradeState = new UpgradeState();
     private boolean hasMaxStorageUpgrade = false;
     private boolean hasOreDictionaryUpgrade = false;
 
@@ -270,12 +268,9 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
      */
     public void recalculateUpgrades() {
         UpgradeState state = calculateUpgradeState(null, ItemStack.EMPTY);
+        this.cachedUpgradeState = state;
         isCreative = state.creative;
         isVoid = state.voidUpgrade;
-        this.storageMultiplier = Math.max(state.storageMultiplier, 0f);
-        this.fluidMultiplier = Math.max(state.fluidMultiplier, 0f);
-        this.rangeMultiplier = Math.max(state.rangeMultiplier, 0f);
-        this.hasIronDowngrade = state.ironDowngrade;
         this.hasMaxStorageUpgrade = state.maxStorage;
         this.hasOreDictionaryUpgrade = state.oreDictionary;
 
@@ -351,15 +346,10 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         }
         if (stack.getItem() instanceof StorageUpgradeItem) {
             StorageUpgradeItem upgrade = (StorageUpgradeItem) stack.getItem();
-            if (upgrade.getTier() == StorageUpgradeItem.StorageTier.IRON) {
-                state.ironDowngrade = true;
-            } else if (upgrade.isMaxStorageUpgrade()) {
+            if (upgrade.isMaxStorageUpgrade()) {
                 state.maxStorage = true;
             } else {
-                float tierMult = upgrade.getTier().getMultiplier();
-                state.storageMultiplier *= tierMult;
-                state.fluidMultiplier *= (tierMult / Configurations.STORAGE.fluidDivisor);
-                state.rangeMultiplier += (tierMult / Configurations.STORAGE.rangeDivisor);
+                state.addModifiers(upgrade.getModifiers());
             }
         }
         if (stack.getItem() == RegistrationHandler.CREATIVE_VENDING_UPGRADE) {
@@ -403,24 +393,21 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
         return Collections.emptySet();
     }
 
-    public float getStorageMultiplier() {
+    public float calculateModifier(ModifierType type, float defaultBase) {
         if (needsUpgradeCache) recalculateUpgrades();
-        return storageMultiplier;
+        return cachedUpgradeState.calculate(type, defaultBase);
     }
 
-    public float getFluidMultiplier() {
-        if (needsUpgradeCache) recalculateUpgrades();
-        return fluidMultiplier;
+    public float getStorageMultiplier(float defaultBase) {
+        return calculateModifier(ModifierType.ITEM_STORAGE, defaultBase);
     }
 
-    public float getRangeMultiplier() {
-        if (needsUpgradeCache) recalculateUpgrades();
-        return rangeMultiplier;
+    public float getFluidMultiplier(float defaultBase) {
+        return calculateModifier(ModifierType.FLUID_STORAGE, defaultBase);
     }
 
-    public boolean hasIronDowngrade() {
-        if (needsUpgradeCache) recalculateUpgrades();
-        return hasIronDowngrade;
+    public float getRangeBonus() {
+        return calculateModifier(ModifierType.CONTROLLER_RANGE, 0);
     }
 
     public boolean hasMaxStorageUpgrade() {

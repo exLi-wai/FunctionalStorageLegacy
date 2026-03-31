@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.tile.compact;
 
 import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.util.CompactingUtil;
@@ -53,8 +54,7 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
             @Override
             public float getMultiplier() {
-                float baseSize = CompactingDrawerTile.this.hasIronDowngrade() ? 1.0f : 8.0f;
-                return baseSize * CompactingDrawerTile.this.getStorageMultiplier();
+                return CompactingDrawerTile.this.getStorageMultiplier(8.0f);
             }
 
             @Override
@@ -221,8 +221,8 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         if (state.creative || state.maxStorage) {
             return true;
         }
-        float baseSize = state.ironDowngrade ? 1.0f : 8.0f;
-        long totalCapacity = (long) ((getSlotCount() == 2 ? 64D * 9D : 64D * 9D * 9D) * baseSize * state.storageMultiplier);
+        float calculated = state.calculate(ModifierType.ITEM_STORAGE, 8.0f);
+        long totalCapacity = (long) ((getSlotCount() == 2 ? 64D * 9D : 64D * 9D * 9D) * calculated);
         return handler.getTotalInBase() <= totalCapacity;
     }
 

@@ -1,7 +1,8 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.capability;
 
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.UpgradeModifier;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StorageUpgradeItem;
-import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import com.xinyihl.functionalstoragelegacy.misc.RegistrationHandler;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -9,6 +10,7 @@ import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.*;
 
 final class DrawerStackDataHelper {
 
@@ -56,14 +58,10 @@ final class DrawerStackDataHelper {
                 }
                 if (upgradeStack.getItem() instanceof StorageUpgradeItem) {
                     StorageUpgradeItem upgrade = (StorageUpgradeItem) upgradeStack.getItem();
-                    if (upgrade.getTier() == StorageUpgradeItem.StorageTier.IRON) {
-                        state.ironDowngrade = true;
-                    } else if (upgrade.isMaxStorageUpgrade()) {
+                    if (upgrade.isMaxStorageUpgrade()) {
                         state.maxStorage = true;
                     } else {
-                        float tierMult = upgrade.getTier().getMultiplier();
-                        state.storageMultiplier *= tierMult;
-                        state.fluidMultiplier *= (tierMult / Configurations.STORAGE.fluidDivisor);
+                        state.addModifiers(upgrade.getModifiers());
                     }
                 }
                 if (upgradeStack.getItem() == RegistrationHandler.CREATIVE_VENDING_UPGRADE) {
@@ -89,13 +87,25 @@ final class DrawerStackDataHelper {
     }
 
     static final class UpgradeState {
-        float storageMultiplier = 1.0f;
-        float fluidMultiplier = 1.0f;
-        boolean ironDowngrade = false;
+        private final Map<ModifierType, List<UpgradeModifier>> modifiers = new EnumMap<>(ModifierType.class);
         boolean maxStorage = false;
         boolean creative = false;
         boolean voidUpgrade = false;
         boolean locked = false;
         boolean oreDictionary = false;
+
+        void addModifiers(Map<ModifierType, UpgradeModifier> mods) {
+            for (Map.Entry<ModifierType, UpgradeModifier> entry : mods.entrySet()) {
+                modifiers.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(entry.getValue());
+            }
+        }
+
+        float calculate(ModifierType type, float defaultBase) {
+            List<UpgradeModifier> mods = modifiers.get(type);
+            if (mods == null || mods.isEmpty()) {
+                return UpgradeModifier.calculate(defaultBase);
+            }
+            return UpgradeModifier.calculate(mods, defaultBase);
+        }
     }
 }

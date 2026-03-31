@@ -257,7 +257,7 @@ public class GuiDrawer extends GuiContainer {
                 ItemStack existing = container.getTile().getStorageUpgrades().getStackInSlot(i);
                 if (existing.getItem() instanceof StorageUpgradeItem) {
                     StorageUpgradeItem existingUpgrade = (StorageUpgradeItem) existing.getItem();
-                    if (carriedUpgrade.getTier().getMultiplier() > existingUpgrade.getTier().getMultiplier()) {
+                    if (carriedUpgrade.getTier().getItemStorageMultiplier() > existingUpgrade.getTier().getItemStorageMultiplier()) {
                         int color = container.getTile().canReplaceStorageUpgrade(i, previewUpgradeStack)
                                 ? 0x5500AA00
                                 : 0x55AA0000;

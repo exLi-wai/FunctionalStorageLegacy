@@ -2,6 +2,7 @@ package com.xinyihl.functionalstoragelegacy.common.tile;
 
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
 import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import net.minecraft.entity.player.EntityPlayer;
@@ -49,8 +50,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
 
             @Override
             public float getMultiplier() {
-                float baseSize = FluidDrawerTile.this.hasIronDowngrade() ? 1.0f : FluidDrawerTile.this.drawerType.getSlotAmount();
-                return baseSize * FluidDrawerTile.this.getFluidMultiplier();
+                return FluidDrawerTile.this.getFluidMultiplier(FluidDrawerTile.this.drawerType.getSlotAmount());
             }
 
             @Override
@@ -230,8 +230,8 @@ public class FluidDrawerTile extends ControllableDrawerTile {
         if (state.creative || state.maxStorage) {
             return true;
         }
-        float baseSize = state.ironDowngrade ? 1.0f : drawerType.getSlotAmount();
-        long capacityPerTank = (long) Math.floor(baseSize * state.fluidMultiplier * 1000D);
+        float calculated = state.calculate(ModifierType.FLUID_STORAGE, drawerType.getSlotAmount());
+        long capacityPerTank = (long) Math.floor(calculated * 1000D);
         for (BigFluidHandler.CustomFluidTank tank : fluidHandler.getTanks()) {
             if (tank.getFluid() != null && tank.getFluid().amount > capacityPerTank) {
                 return false;

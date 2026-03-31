@@ -1,5 +1,6 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.capability;
 
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -34,8 +35,7 @@ public class CompactingStackItemHandler extends CompactingInventoryHandler {
 
     @Override
     public float getMultiplier() {
-        float baseSize = upgradeState.ironDowngrade ? 1.0f : 8.0f;
-        return baseSize * upgradeState.storageMultiplier;
+        return upgradeState.calculate(ModifierType.ITEM_STORAGE, 8.0f);
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.xinyihl.functionalstoragelegacy.common.tile;
 import com.xinyihl.functionalstoragelegacy.api.DrawerType;
 import com.xinyihl.functionalstoragelegacy.api.DrawerWoodType;
 import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import net.minecraft.entity.player.EntityPlayer;
@@ -54,8 +55,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
 
             @Override
             public float getMultiplier() {
-                float baseSize = WoodDrawerTile.this.hasIronDowngrade() ? 1.0f : WoodDrawerTile.this.drawerType.getSlotAmount();
-                return baseSize * WoodDrawerTile.this.getStorageMultiplier();
+                return WoodDrawerTile.this.getStorageMultiplier(WoodDrawerTile.this.drawerType.getSlotAmount());
             }
 
             @Override
@@ -248,7 +248,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
         if (state.creative || state.maxStorage) {
             return true;
         }
-        float baseSize = state.ironDowngrade ? 1.0f : drawerType.getSlotAmount();
+        float calculated = state.calculate(ModifierType.ITEM_STORAGE, drawerType.getSlotAmount());
         for (int i = 0; i < handler.getSlotCount(); i++) {
             BigInventoryHandler.BigStack bigStack = handler.getStoredStacks().get(i);
             if (bigStack.getAmount() <= 0) {
@@ -258,7 +258,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
             if (!bigStack.getStack().isEmpty()) {
                 stackSize = bigStack.getStack().getMaxStackSize() / 64D;
             }
-            long capacity = (long) Math.floor(64D * baseSize * state.storageMultiplier * stackSize);
+            long capacity = (long) Math.floor(64D * calculated * stackSize);
             if (bigStack.getAmount() > capacity) {
                 return false;
             }

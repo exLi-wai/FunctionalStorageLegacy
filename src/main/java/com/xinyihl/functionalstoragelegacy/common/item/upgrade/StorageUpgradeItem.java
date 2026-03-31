@@ -1,5 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.item.upgrade;
 
+import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.UpgradeModifier;
 import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.item.ItemStack;
@@ -11,11 +13,15 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Item for storage upgrades that increase drawer capacity.
- * Has different tiers (IRON/COPPER/GOLD/DIAMOND/NETHERITE).
+ * Has different tiers (IRON/COPPER/GOLD/DIAMOND/NETHERITE/MAX).
+ * Each tier carries a set of {@link UpgradeModifier}s keyed by {@link ModifierType}.
  */
 public class StorageUpgradeItem extends UpgradeItem {
 
@@ -34,6 +40,10 @@ public class StorageUpgradeItem extends UpgradeItem {
         return tier == StorageTier.MAX;
     }
 
+    public Map<ModifierType, UpgradeModifier> getModifiers() {
+        return tier.getModifiers();
+    }
+
     @Override
     public boolean hasEffect(@Nonnull ItemStack stack) {
         return tier == StorageTier.NETHERITE || tier == StorageTier.MAX;
@@ -48,12 +58,14 @@ public class StorageUpgradeItem extends UpgradeItem {
         } else if (tier == StorageTier.MAX) {
             tooltip.add(TextFormatting.GOLD + new TextComponentTranslation("item.functionalstoragelegacy.max_storage_upgrade.desc").getUnformattedText());
         } else {
-            tooltip.add(TextFormatting.YELLOW + new TextComponentTranslation("item.functionalstoragelegacy.storage_upgrade.multiplier", TextFormatting.WHITE + "" + tier.getMultiplier() + "x").getUnformattedText());
+            tooltip.add(TextFormatting.YELLOW + new TextComponentTranslation("item.functionalstoragelegacy.storage_upgrade.multiplier", TextFormatting.WHITE + "" + tier.getItemStorageMultiplier() + "x").getUnformattedText());
         }
     }
 
     /**
-     * Storage upgrade tiers with their capacity multipliers.
+     * Storage upgrade tiers with their capacity modifiers.
+     * Each tier provides a map of {@link ModifierType} -> {@link UpgradeModifier}
+     * describing how the tier affects different aspects of a drawer.
      */
     public enum StorageTier {
         IRON("iron"),
@@ -69,7 +81,32 @@ public class StorageUpgradeItem extends UpgradeItem {
             this.name = name;
         }
 
-        public float getMultiplier() {
+        public Map<ModifierType, UpgradeModifier> getModifiers() {
+            switch (this) {
+                case IRON: {
+                    Map<ModifierType, UpgradeModifier> map = new EnumMap<>(ModifierType.class);
+                    map.put(ModifierType.ITEM_STORAGE, new UpgradeModifier.SetBase(1));
+                    map.put(ModifierType.FLUID_STORAGE, new UpgradeModifier.SetBase(1));
+                    return map;
+                }
+                case COPPER:
+                case GOLD:
+                case DIAMOND:
+                case NETHERITE: {
+                    float mult = getItemStorageMultiplier();
+                    Map<ModifierType, UpgradeModifier> map = new EnumMap<>(ModifierType.class);
+                    map.put(ModifierType.ITEM_STORAGE, new UpgradeModifier.MultiplyFactor(mult));
+                    map.put(ModifierType.FLUID_STORAGE, new UpgradeModifier.MultiplyFactor(mult / Configurations.STORAGE.fluidDivisor));
+                    map.put(ModifierType.CONTROLLER_RANGE, new UpgradeModifier.AddToBase(mult / Configurations.STORAGE.rangeDivisor));
+                    return map;
+                }
+                case MAX:
+                default:
+                    return Collections.emptyMap();
+            }
+        }
+
+        public float getItemStorageMultiplier() {
             switch (this) {
                 case COPPER:
                     return Configurations.STORAGE.copperMultiplier;
