@@ -1,10 +1,10 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.base;
 
+import com.xinyihl.functionalstoragelegacy.api.IBigItemHandler;
 import com.xinyihl.functionalstoragelegacy.api.ILockable;
 import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.List;
  * Each slot can store items beyond vanilla's 64 limit using BigStack (ItemStack + long amount).
  * Supports locked/void/creative modes.
  */
-public abstract class BigInventoryHandler implements IItemHandler, ILockable {
+public abstract class BigInventoryHandler implements IBigItemHandler, ILockable {
 
     public static final String BIG_ITEMS = "BigItems";
     public static final String STACK = "Stack";
@@ -55,86 +55,26 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
     @Override
     public ItemStack insertItem(int slot, @Nonnull ItemStack stack, boolean simulate) {
         if (stack.isEmpty()) return ItemStack.EMPTY;
-
-        if (isCreative() && slot < slots) {
-            BigStack bigStack = this.storedStacks.get(slot);
-            if (bigStack.getStack().isEmpty()) {
-                if (!simulate) {
-                    ItemStack template = stack.copy();
-                    template.setCount(stack.getMaxStackSize());
-                    bigStack.setStack(template);
-                    bigStack.setAmount(Long.MAX_VALUE);
-                    onChange();
-                }
-                return ItemStack.EMPTY;
-            }
-
-            if (ItemUtil.areItemStacksCompatible(bigStack.getStack(), stack, allowsEquivalentItems())) {
-                if (!simulate) {
-                    bigStack.setAmount(Long.MAX_VALUE);
-                    onChange();
-                }
-                return ItemStack.EMPTY;
-            }
-            return stack;
-        }
-
-        if (isVoid() && slots == slot && isVoidValid(stack) || (isVoidValid(stack) && isCreative()))
-            return ItemStack.EMPTY;
-
-        if (isValid(slot, stack)) {
-            BigStack bigStack = this.storedStacks.get(slot);
-            long limit = getLongSlotLimit(slot);
-            int inserted = (int) Math.max(0, Math.min(limit - bigStack.getAmount(), stack.getCount()));
-            if (inserted == 0 && !isVoid()) return stack;
-            if (!simulate) {
-                if (bigStack.getStack().isEmpty()) {
-                    ItemStack template = stack.copy();
-                    template.setCount(stack.getMaxStackSize());
-                    bigStack.setStack(template);
-                }
-                if (inserted > 0) {
-                    bigStack.setAmount(Math.min(bigStack.getAmount() + inserted, limit));
-                }
-                onChange();
-            }
-            if (inserted >= stack.getCount() || isVoid()) return ItemStack.EMPTY;
-            ItemStack remainder = stack.copy();
-            remainder.setCount(stack.getCount() - inserted);
-            return remainder;
-        }
-        return stack;
+        long remaining = insertItemLong(slot, stack, stack.getCount(), simulate);
+        if (remaining <= 0) return ItemStack.EMPTY;
+        if (remaining >= stack.getCount()) return stack;
+        ItemStack result = stack.copy();
+        result.setCount((int) remaining);
+        return result;
     }
 
     @Nonnull
     @Override
     public ItemStack extractItem(int slot, int amount, boolean simulate) {
-        if (amount <= 0 || slots == slot) return ItemStack.EMPTY;
-        if (slot < slots) {
-            BigStack bigStack = this.storedStacks.get(slot);
-            if (bigStack.getStack().isEmpty()) return ItemStack.EMPTY;
-            amount = Math.min(amount, bigStack.getStack().getMaxStackSize());
-            if (!isCreative() && bigStack.getAmount() <= amount) {
-                ItemStack out = bigStack.getStack().copy();
-                int newAmount = (int) Math.min(bigStack.getAmount(), Integer.MAX_VALUE);
-                if (!simulate && !isCreative()) {
-                    if (!isLocked()) bigStack.setStack(ItemStack.EMPTY);
-                    bigStack.setAmount(0);
-                    onChange();
-                }
-                out.setCount(newAmount);
-                return out;
-            } else {
-                if (!simulate && !isCreative()) {
-                    bigStack.setAmount(bigStack.getAmount() - amount);
-                    onChange();
-                }
-                ItemStack out = bigStack.getStack().copy();
-                out.setCount(amount);
-                return out;
-            }
-        }
-        return ItemStack.EMPTY;
+        if (amount <= 0 || slot < 0 || slot >= slots) return ItemStack.EMPTY;
+        BigStack bigStack = this.storedStacks.get(slot);
+        if (bigStack.getStack().isEmpty()) return ItemStack.EMPTY;
+        ItemStack type = bigStack.getStack().copy();
+        amount = Math.min(amount, type.getMaxStackSize());
+        long extracted = extractItemLong(slot, amount, simulate);
+        if (extracted <= 0) return ItemStack.EMPTY;
+        type.setCount((int) Math.min(extracted, Integer.MAX_VALUE));
+        return type;
     }
 
     @Override
@@ -155,6 +95,101 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
     @Override
     public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
         return !stack.isEmpty();
+    }
+
+    @Override
+    public long insertItemLong(int slot, @Nonnull ItemStack stack, long amount, boolean simulate) {
+        if (stack.isEmpty() || amount <= 0) return amount;
+
+        if (isVoid() && slots == slot && isVoidValid(stack)) return 0;
+
+        if (isCreative() && slot < slots) {
+            BigStack bigStack = this.storedStacks.get(slot);
+            if (bigStack.getStack().isEmpty()) {
+                if (!simulate) {
+                    ItemStack template = stack.copy();
+                    template.setCount(stack.getMaxStackSize());
+                    bigStack.setStack(template);
+                    bigStack.setAmount(Long.MAX_VALUE);
+                    onChange();
+                }
+                return 0;
+            }
+            if (ItemUtil.areItemStacksCompatible(bigStack.getStack(), stack, allowsEquivalentItems())) {
+                if (!simulate) {
+                    bigStack.setAmount(Long.MAX_VALUE);
+                    onChange();
+                }
+                return 0;
+            }
+            return amount;
+        }
+
+        if (isValid(slot, stack)) {
+            BigStack bigStack = this.storedStacks.get(slot);
+            long limit = getLongSlotLimit(slot);
+            long inserted = Math.max(0, Math.min(limit - bigStack.getAmount(), amount));
+            if (inserted == 0 && !isVoid()) return amount;
+            if (!simulate) {
+                if (bigStack.getStack().isEmpty()) {
+                    ItemStack template = stack.copy();
+                    template.setCount(stack.getMaxStackSize());
+                    bigStack.setStack(template);
+                }
+                if (inserted > 0) {
+                    bigStack.setAmount(Math.min(bigStack.getAmount() + inserted, limit));
+                }
+                onChange();
+            }
+            long remaining = amount - inserted;
+            if (remaining > 0 && isVoid()) return 0;
+            return remaining;
+        }
+        return amount;
+    }
+
+    @Override
+    public long extractItemLong(int slot, long amount, boolean simulate) {
+        if (amount <= 0 || slot >= slots || slot < 0) return 0;
+        BigStack bigStack = this.storedStacks.get(slot);
+        if (bigStack.getStack().isEmpty()) return 0;
+
+        if (isCreative()) return amount;
+
+        long available = bigStack.getAmount();
+        long extracting = Math.min(amount, available);
+        if (extracting <= 0) return 0;
+
+        if (!simulate) {
+            bigStack.setAmount(available - extracting);
+            if (bigStack.getAmount() <= 0 && !isLocked()) {
+                bigStack.setStack(ItemStack.EMPTY);
+            }
+            onChange();
+        }
+        return extracting;
+    }
+
+    @Override
+    public long getStoredAmount(int slot) {
+        if (slot >= 0 && slot < storedStacks.size()) {
+            return storedStacks.get(slot).getAmount();
+        }
+        return 0;
+    }
+
+    @Nonnull
+    @Override
+    public ItemStack getStoredType(int slot) {
+        if (slot >= 0 && slot < storedStacks.size()) {
+            return storedStacks.get(slot).getStack();
+        }
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public int getRealSlotCount() {
+        return slots;
     }
 
     private boolean isValid(int slot, @Nonnull ItemStack stack) {
@@ -297,7 +332,9 @@ public abstract class BigInventoryHandler implements IItemHandler, ILockable {
         public void setAmount(long amount) {
             this.amount = Math.max(amount, 0);
             if (!this.stack.isEmpty() && this.amount > 0) {
-                this.slotStack = this.stack.copy();
+                if (this.slotStack.isEmpty()) {
+                    this.slotStack = this.stack.copy();
+                }
                 this.slotStack.setCount((int) Math.min(this.amount, Integer.MAX_VALUE));
             } else {
                 this.slotStack = ItemStack.EMPTY;

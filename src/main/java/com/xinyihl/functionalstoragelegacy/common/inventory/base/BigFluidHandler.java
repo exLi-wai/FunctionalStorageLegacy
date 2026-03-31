@@ -1,9 +1,9 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.base;
 
+import com.xinyihl.functionalstoragelegacy.api.IBigFluidHandler;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
 
 import javax.annotation.Nullable;
@@ -14,10 +14,11 @@ import java.util.List;
  * Big fluid handler supporting multiple tanks with large capacity.
  * Supports locked/void/creative modes like BigInventoryHandler.
  */
-public abstract class BigFluidHandler implements IFluidHandler {
+public abstract class BigFluidHandler implements IBigFluidHandler {
 
     private final List<CustomFluidTank> tanks;
     private final int tankCount;
+    private IFluidTankProperties[] cachedProperties;
 
     public BigFluidHandler(int tankCount) {
         this.tankCount = tankCount;
@@ -29,10 +30,11 @@ public abstract class BigFluidHandler implements IFluidHandler {
 
     @Override
     public IFluidTankProperties[] getTankProperties() {
-        IFluidTankProperties[] props = new IFluidTankProperties[tankCount];
+        if (cachedProperties != null) return cachedProperties;
+        cachedProperties = new IFluidTankProperties[tankCount];
         for (int i = 0; i < tankCount; i++) {
             final int idx = i;
-            props[i] = new IFluidTankProperties() {
+            cachedProperties[i] = new IFluidTankProperties() {
                 @Nullable
                 @Override
                 public FluidStack getContents() {
@@ -78,59 +80,36 @@ public abstract class BigFluidHandler implements IFluidHandler {
                 }
             };
         }
-        return props;
+        return cachedProperties;
     }
 
     @Override
     public int fill(FluidStack resource, boolean doFill) {
         if (resource == null || resource.amount <= 0) return 0;
 
-        if (isCreative()) {
-            int maxCapacity = getCapacityPerTank();
+        long remaining = resource.amount;
 
-            for (CustomFluidTank tank : tanks) {
-                if (handleCreativeTankFill(tank, resource, doFill, maxCapacity)) {
-                    return resource.amount;
-                }
-            }
-            return 0;
-        }
-
-        int remaining = resource.amount;
-        for (CustomFluidTank tank : tanks) {
-            if (tank.getFluid() != null && tank.getFluid().isFluidEqual(resource)) {
-                int filled = tank.fill(resource.copy(), doFill);
+        // Priority: matching tanks first
+        for (int i = 0; i < tankCount; i++) {
+            FluidStack stored = getStoredFluid(i);
+            if (stored != null && stored.amount > 0 && stored.isFluidEqual(resource)) {
+                long filled = fillLong(i, resource, remaining, !doFill);
                 remaining -= filled;
-                if (remaining <= 0) break;
-                FluidStack next = resource.copy();
-                next.amount = remaining;
-                resource = next;
+                if (remaining <= 0) return resource.amount;
             }
         }
 
-        if (remaining > 0) {
-            for (CustomFluidTank tank : tanks) {
-                if (tank.getFluid() == null || tank.getFluid().amount == 0) {
-                    if (isLocked() && tank.getLockedFluid() != null && !tank.getLockedFluid().isFluidEqual(resource))
-                        continue;
-                    FluidStack toFill = resource.copy();
-                    toFill.amount = remaining;
-                    int filled = tank.fill(toFill, doFill);
-                    remaining -= filled;
-                    if (remaining <= 0) break;
-                }
+        // Then empty tanks
+        for (int i = 0; i < tankCount; i++) {
+            FluidStack stored = getStoredFluid(i);
+            if (stored == null || stored.amount <= 0) {
+                long filled = fillLong(i, resource, remaining, !doFill);
+                remaining -= filled;
+                if (remaining <= 0) return resource.amount;
             }
         }
 
-        int totalFilled = resource.amount - remaining;
-
-        if (isVoid() && totalFilled < resource.amount) {
-            if (doFill) onChange();
-            return resource.amount;
-        }
-
-        if (totalFilled > 0 && doFill) onChange();
-        return totalFilled;
+        return (int) Math.min(resource.amount - remaining, Integer.MAX_VALUE);
     }
 
     @Nullable
@@ -138,35 +117,21 @@ public abstract class BigFluidHandler implements IFluidHandler {
     public FluidStack drain(FluidStack resource, boolean doDrain) {
         if (resource == null || resource.amount <= 0) return null;
 
-        if (isCreative()) {
-            for (CustomFluidTank tank : tanks) {
-                if (tank.getFluid() != null && tank.getFluid().isFluidEqual(resource)) {
-                    if (doDrain) onChange();
-                    return resource.copy();
-                }
-            }
-            return null;
-        }
+        long remaining = resource.amount;
 
-        int remaining = resource.amount;
-        FluidStack result = null;
-
-        for (CustomFluidTank tank : tanks) {
-            if (tank.getFluid() != null && tank.getFluid().isFluidEqual(resource)) {
-                FluidStack drained = tank.drain(remaining, doDrain);
-                if (drained != null) {
-                    if (result == null) {
-                        result = drained.copy();
-                    } else {
-                        result.amount += drained.amount;
-                    }
-                    remaining -= drained.amount;
-                    if (remaining <= 0) break;
-                }
+        for (int i = 0; i < tankCount; i++) {
+            FluidStack stored = getStoredFluid(i);
+            if (stored != null && stored.isFluidEqual(resource)) {
+                long drained = drainLong(i, remaining, !doDrain);
+                remaining -= drained;
+                if (remaining <= 0) break;
             }
         }
 
-        if (result != null && doDrain) onChange();
+        long totalDrained = resource.amount - remaining;
+        if (totalDrained <= 0) return null;
+        FluidStack result = resource.copy();
+        result.amount = (int) Math.min(totalDrained, Integer.MAX_VALUE);
         return result;
     }
 
@@ -175,39 +140,27 @@ public abstract class BigFluidHandler implements IFluidHandler {
     public FluidStack drain(int maxDrain, boolean doDrain) {
         if (maxDrain <= 0) return null;
 
-        if (isCreative()) {
-            for (CustomFluidTank tank : tanks) {
-                if (tank.getFluid() != null && tank.getFluid().amount > 0) {
-                    if (doDrain) onChange();
-                    FluidStack fluid = tank.getFluid().copy();
-                    fluid.amount = maxDrain;
-                    return fluid;
-                }
-            }
-            return null;
-        }
+        long remaining = maxDrain;
+        FluidStack resultFluid = null;
 
-        FluidStack result = null;
-        int remaining = maxDrain;
-
-        for (CustomFluidTank tank : tanks) {
-            if (tank.getFluid() != null && tank.getFluid().amount > 0) {
-                if (result != null && !tank.getFluid().isFluidEqual(result)) continue;
-                FluidStack drained = tank.drain(remaining, doDrain);
-                if (drained != null) {
-                    if (result == null) {
-                        result = drained.copy();
-                    } else {
-                        result.amount += drained.amount;
-                    }
-                    remaining -= drained.amount;
+        for (int i = 0; i < tankCount; i++) {
+            FluidStack stored = getStoredFluid(i);
+            if (stored != null && stored.amount > 0) {
+                if (resultFluid != null && !stored.isFluidEqual(resultFluid)) continue;
+                long drained = drainLong(i, remaining, !doDrain);
+                if (drained > 0) {
+                    if (resultFluid == null) resultFluid = stored.copy();
+                    remaining -= drained;
                     if (remaining <= 0) break;
                 }
             }
         }
 
-        if (result != null && doDrain) onChange();
-        return result;
+        if (resultFluid == null) return null;
+        long totalDrained = maxDrain - remaining;
+        if (totalDrained <= 0) return null;
+        resultFluid.amount = (int) Math.min(totalDrained, Integer.MAX_VALUE);
+        return resultFluid;
     }
 
     public NBTTagCompound serializeNBT() {
@@ -261,124 +214,144 @@ public abstract class BigFluidHandler implements IFluidHandler {
         return tankCount;
     }
 
-    public int fillTank(int tank, FluidStack resource, boolean doFill) {
-        if (resource == null || resource.amount <= 0) return 0;
+    @Override
+    public long getLongCapacity(int tank) {
+        return getLongCapacityPerTank();
+    }
+
+    @Override
+    public long fillLong(int tank, FluidStack resource, long amount, boolean simulate) {
+        if (resource == null || amount <= 0) return 0;
         if (tank < 0 || tank >= tanks.size()) return 0;
-
-        if (isCreative()) {
-            int maxCapacity = getCapacityPerTank();
-            CustomFluidTank target = tanks.get(tank);
-
-            if (handleCreativeTankFill(target, resource, doFill, maxCapacity)) {
-                return resource.amount;
-            }
-            return 0;
-        }
 
         CustomFluidTank target = tanks.get(tank);
         FluidStack current = target.getFluid();
 
-        if (current != null && current.amount > 0 && !current.isFluidEqual(resource)) {
+        if (isCreative()) {
+            int maxCapacity = getCapacityPerTank();
+            if (current == null || current.amount <= 0) {
+                if (isLocked() && target.getLockedFluid() != null
+                        && !target.getLockedFluid().isFluidEqual(resource)) return 0;
+                if (!simulate) {
+                    FluidStack full = resource.copy();
+                    full.amount = maxCapacity;
+                    target.setFluid(full);
+                    target.setLockedFluid(resource.copy());
+                    onChange();
+                }
+                return amount;
+            }
+            if (current.isFluidEqual(resource)) {
+                if (!simulate) {
+                    current.amount = maxCapacity;
+                    target.setFluid(current);
+                    onChange();
+                }
+                return amount;
+            }
             return 0;
         }
 
+        if (current != null && current.amount > 0 && !current.isFluidEqual(resource)) return 0;
         if ((current == null || current.amount <= 0) && isLocked()
                 && target.getLockedFluid() != null
-                && !target.getLockedFluid().isFluidEqual(resource)) {
-            return 0;
+                && !target.getLockedFluid().isFluidEqual(resource)) return 0;
+
+        long capacity = getLongCapacityPerTank();
+        long currentAmount = (current != null) ? current.amount : 0;
+        long space = capacity - currentAmount;
+        long inserting = Math.min(amount, space);
+
+        if (inserting > 0 && !simulate) {
+            if (current == null || current.amount <= 0) {
+                FluidStack filled = resource.copy();
+                filled.amount = (int) Math.min(inserting, Integer.MAX_VALUE);
+                target.setFluid(filled);
+            } else {
+                current.amount = (int) Math.min(currentAmount + inserting, Integer.MAX_VALUE);
+                target.setFluid(current);
+            }
+            onChange();
         }
 
-        int filled = target.fill(resource.copy(), doFill);
-
-        if (isVoid()) {
-            if (doFill) onChange();
-            return resource.amount;
+        long filled = inserting;
+        if (isVoid() && filled < amount) {
+            return amount;
         }
-
-        if (filled > 0 && doFill) onChange();
         return filled;
     }
 
-    private boolean handleCreativeTankFill(CustomFluidTank tank, FluidStack resource, boolean doFill, int maxCapacity) {
-        FluidStack current = tank.getFluid();
+    @Override
+    public long drainLong(int tank, long amount, boolean simulate) {
+        if (amount <= 0) return 0;
+        if (tank < 0 || tank >= tanks.size()) return 0;
 
-        if (current == null || current.amount <= 0) {
-            if (isLocked() && tank.getLockedFluid() != null) {
-                if (!tank.getLockedFluid().isFluidEqual(resource)) {
-                    return false;
-                }
+        CustomFluidTank target = tanks.get(tank);
+        FluidStack current = target.getFluid();
+        if (current == null || current.amount <= 0) return 0;
+
+        if (isCreative()) return amount;
+
+        long available = current.amount;
+        long extracting = Math.min(amount, available);
+        if (extracting <= 0) return 0;
+
+        if (!simulate) {
+            current.amount -= (int) extracting;
+            if (current.amount <= 0) {
+                target.setFluid(null);
             }
-
-            if (doFill) {
-                FluidStack locked = resource.copy();
-                locked.amount = 1000;
-                tank.setLockedFluid(locked);
-
-                FluidStack fullStack = resource.copy();
-                fullStack.amount = maxCapacity;
-                tank.setFluid(fullStack);
-
-                onChange();
-            }
-            return true;
+            onChange();
         }
+        return extracting;
+    }
 
-        if (current.isFluidEqual(resource)) {
-            if (doFill) {
-                current.amount = maxCapacity;
-                tank.setFluid(current);
-                onChange();
-            }
-            return true;
+    @Nullable
+    @Override
+    public FluidStack getStoredFluid(int tank) {
+        if (tank >= 0 && tank < tanks.size()) {
+            return tanks.get(tank).getFluid();
         }
+        return null;
+    }
 
-        return false;
+    @Override
+    public long getStoredFluidAmount(int tank) {
+        if (tank >= 0 && tank < tanks.size()) {
+            FluidStack fluid = tanks.get(tank).getFluid();
+            return fluid != null ? fluid.amount : 0;
+        }
+        return 0;
+    }
+
+    public int fillTank(int tank, FluidStack resource, boolean doFill) {
+        if (resource == null || resource.amount <= 0) return 0;
+        long filled = fillLong(tank, resource, resource.amount, !doFill);
+        return (int) Math.min(filled, Integer.MAX_VALUE);
     }
 
     @Nullable
     public FluidStack drainTank(int tank, int maxDrain, boolean doDrain) {
-        if (maxDrain <= 0) return null;
-        if (tank < 0 || tank >= tanks.size()) return null;
-
-        if (isCreative()) {
-            CustomFluidTank target = tanks.get(tank);
-            if (target.getFluid() != null) {
-                FluidStack result = target.getFluid().copy();
-                result.amount = maxDrain;
-                if (doDrain) onChange();
-                return result;
-            }
-            return null;
-        }
-
-        CustomFluidTank target = tanks.get(tank);
-        FluidStack drained = target.drain(maxDrain, doDrain);
-        if (drained != null && drained.amount > 0 && doDrain) onChange();
-        return drained;
+        if (maxDrain <= 0 || tank < 0 || tank >= tanks.size()) return null;
+        FluidStack stored = getStoredFluid(tank);
+        if (stored == null || stored.amount <= 0) return null;
+        FluidStack type = stored.copy();
+        long drained = drainLong(tank, maxDrain, !doDrain);
+        if (drained <= 0) return null;
+        type.amount = (int) Math.min(drained, Integer.MAX_VALUE);
+        return type;
     }
 
     @Nullable
     public FluidStack drainTank(int tank, FluidStack resource, boolean doDrain) {
-        if (resource == null || resource.amount <= 0) return null;
-        if (tank < 0 || tank >= tanks.size()) return null;
-
-        if (isCreative()) {
-            CustomFluidTank target = tanks.get(tank);
-            if (target.getFluid() != null && target.getFluid().isFluidEqual(resource)) {
-                FluidStack result = resource.copy();
-                if (doDrain) onChange();
-                return result;
-            }
-            return null;
-        }
-
-        CustomFluidTank target = tanks.get(tank);
-        FluidStack current = target.getFluid();
-        if (current == null || !current.isFluidEqual(resource)) return null;
-
-        FluidStack drained = target.drain(resource.amount, doDrain);
-        if (drained != null && drained.amount > 0 && doDrain) onChange();
-        return drained;
+        if (resource == null || resource.amount <= 0 || tank < 0 || tank >= tanks.size()) return null;
+        FluidStack stored = getStoredFluid(tank);
+        if (stored == null || !stored.isFluidEqual(resource)) return null;
+        long drained = drainLong(tank, resource.amount, !doDrain);
+        if (drained <= 0) return null;
+        FluidStack result = resource.copy();
+        result.amount = (int) Math.min(drained, Integer.MAX_VALUE);
+        return result;
     }
 
     @Nullable

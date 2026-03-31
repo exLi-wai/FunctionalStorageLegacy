@@ -5,15 +5,15 @@ import appeng.api.storage.IStorageMonitorableAccessor;
 import appeng.api.storage.channels.IFluidStorageChannel;
 import appeng.api.storage.channels.IItemStorageChannel;
 import appeng.capabilities.Capabilities;
-import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.api.IBigFluidHandler;
+import com.xinyihl.functionalstoragelegacy.api.IBigItemHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.FluidDrawerTile;
-import com.xinyihl.functionalstoragelegacy.common.tile.WoodDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.compact.CompactingDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.controller.DrawerControllerTile;
 import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.items.IItemHandler;
 
 /**
  * Helper class that directly references AE2 classes.
@@ -37,35 +37,36 @@ public class AE2CapabilityHelper {
         if (tile instanceof DrawerControllerTile) {
             DrawerControllerTile controller = (DrawerControllerTile) tile;
             return new DrawerStorageAccessor(
-                    new DrawerMEMonitor<>(new ControllerMEItemHandler(controller, itemChannel), itemChannel),
-                    new DrawerMEMonitor<>(new ControllerMEFluidHandler(controller, fluidChannel), fluidChannel)
+                    new DrawerMEMonitor<>(new ControllerMEItemHandler(controller.getControllerItemHandler(), itemChannel), itemChannel),
+                    new DrawerMEMonitor<>(new ControllerMEFluidHandler(controller.getControllerFluidHandler(), fluidChannel), fluidChannel)
             );
         }
 
-        if (tile instanceof WoodDrawerTile) {
-            WoodDrawerTile drawer = (WoodDrawerTile) tile;
-            BigInventoryHandler handler = drawer.getHandler();
-            return new DrawerStorageAccessor(
-                    new DrawerMEMonitor<>(new DrawerMEItemHandler(handler, itemChannel), itemChannel),
-                    null
-            );
-        }
-
-        if (tile instanceof CompactingDrawerTile) {
-            CompactingDrawerTile drawer = (CompactingDrawerTile) tile;
-            CompactingInventoryHandler handler = drawer.getCompactingHandler();
-            return new DrawerStorageAccessor(
-                    new DrawerMEMonitor<>(new CompactingMEItemHandler(handler, itemChannel), itemChannel),
-                    null
-            );
-        }
-
+        // Fluid drawers
         if (tile instanceof FluidDrawerTile) {
-            FluidDrawerTile drawer = (FluidDrawerTile) tile;
-            BigFluidHandler handler = drawer.getFluidHandler();
+            IFluidHandler fluidHandler = ((FluidDrawerTile) tile).getFluidHandler();
+            if (fluidHandler instanceof IBigFluidHandler) {
+                return new DrawerStorageAccessor(
+                        null,
+                        new DrawerMEMonitor<>(new DrawerMEFluidHandler((IBigFluidHandler) fluidHandler, fluidChannel), fluidChannel)
+                );
+            }
+            return null;
+        }
+
+        // Item drawers: get IItemHandler and check for IBigItemHandler
+        IItemHandler itemHandler = tile.getItemHandler();
+        if (itemHandler instanceof IBigItemHandler) {
+            IBigItemHandler bigHandler = (IBigItemHandler) itemHandler;
+            if (tile instanceof CompactingDrawerTile) {
+                return new DrawerStorageAccessor(
+                        new DrawerMEMonitor<>(new CompactingMEItemHandler(bigHandler, itemChannel), itemChannel),
+                        null
+                );
+            }
             return new DrawerStorageAccessor(
-                    null,
-                    new DrawerMEMonitor<>(new DrawerMEFluidHandler(handler, fluidChannel), fluidChannel)
+                    new DrawerMEMonitor<>(new DrawerMEItemHandler(bigHandler, itemChannel), itemChannel),
+                    null
             );
         }
 

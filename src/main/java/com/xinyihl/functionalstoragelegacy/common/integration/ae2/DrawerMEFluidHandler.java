@@ -7,20 +7,19 @@ import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.channels.IFluidStorageChannel;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IItemList;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler.CustomFluidTank;
+import com.xinyihl.functionalstoragelegacy.api.IBigFluidHandler;
 import net.minecraftforge.fluids.FluidStack;
 
 /**
- * AE2 ME inventory handler wrapping a BigFluidHandler for fluid drawers.
- * Supports long-level fluid amounts via IAEFluidStack.
+ * AE2 ME inventory handler wrapping an IBigFluidHandler for fluid drawers.
+ * Supports long-level fluid amounts via IBigFluidHandler interface.
  */
 public class DrawerMEFluidHandler implements IDrawerMEInventoryHandler<IAEFluidStack> {
 
-    private final BigFluidHandler handler;
+    private final IBigFluidHandler handler;
     private final IFluidStorageChannel channel;
 
-    public DrawerMEFluidHandler(BigFluidHandler handler, IFluidStorageChannel channel) {
+    public DrawerMEFluidHandler(IBigFluidHandler handler, IFluidStorageChannel channel) {
         this.handler = handler;
         this.channel = channel;
     }
@@ -30,82 +29,30 @@ public class DrawerMEFluidHandler implements IDrawerMEInventoryHandler<IAEFluidS
         if (input == null || input.getStackSize() <= 0) return null;
 
         FluidStack inputFluid = input.getFluidStack();
-        long toInsert = input.getStackSize();
-        long remaining = toInsert;
+        long remaining = input.getStackSize();
+        boolean simulate = type == Actionable.SIMULATE;
 
-        if (handler.isCreative()) {
-            for (CustomFluidTank tank : handler.getTanks()) {
-                FluidStack current = tank.getFluid();
-                if (current == null || current.amount <= 0) {
-                    if (handler.isLocked() && tank.getLockedFluid() != null
-                            && !tank.getLockedFluid().isFluidEqual(inputFluid)) continue;
-                    if (type == Actionable.MODULATE) {
-                        FluidStack full = inputFluid.copy();
-                        full.amount = handler.getCapacityPerTank();
-                        tank.setFluid(full);
-                        tank.setLockedFluid(inputFluid.copy());
-                        handler.onChange();
-                    }
-                    return null;
-                }
-                if (current.isFluidEqual(inputFluid)) {
-                    if (type == Actionable.MODULATE) {
-                        current.amount = handler.getCapacityPerTank();
-                        tank.setFluid(current);
-                        handler.onChange();
-                    }
-                    return null;
-                }
-            }
-            return input;
+        // Priority 1: Matching tanks
+        for (int i = 0; i < handler.getTanksCount(); i++) {
+            FluidStack stored = handler.getStoredFluid(i);
+            if (stored == null || stored.amount <= 0 || !stored.isFluidEqual(inputFluid)) continue;
+
+            long filled = handler.fillLong(i, inputFluid, remaining, simulate);
+            remaining -= filled;
+            if (remaining <= 0) return null;
         }
 
-        // Fill into matching tanks first
-        for (CustomFluidTank tank : handler.getTanks()) {
-            FluidStack current = tank.getFluid();
-            if (current != null && current.amount > 0 && current.isFluidEqual(inputFluid)) {
-                int capacity = tank.getCapacity();
-                long space = capacity - current.amount;
-                long inserting = Math.min(remaining, space);
-                if (inserting > 0) {
-                    if (type == Actionable.MODULATE) {
-                        current.amount += (int) inserting;
-                        tank.setFluid(current);
-                        handler.onChange();
-                    }
-                    remaining -= inserting;
-                    if (remaining <= 0) return null;
-                }
-            }
+        // Priority 2: Empty tanks
+        for (int i = 0; i < handler.getTanksCount(); i++) {
+            FluidStack stored = handler.getStoredFluid(i);
+            if (stored != null && stored.amount > 0) continue;
+
+            long filled = handler.fillLong(i, inputFluid, remaining, simulate);
+            remaining -= filled;
+            if (remaining <= 0) return null;
         }
 
-        // Fill into empty tanks
-        for (CustomFluidTank tank : handler.getTanks()) {
-            FluidStack current = tank.getFluid();
-            if (current == null || current.amount <= 0) {
-                if (handler.isLocked() && tank.getLockedFluid() != null
-                        && !tank.getLockedFluid().isFluidEqual(inputFluid)) continue;
-                int capacity = tank.getCapacity();
-                long inserting = Math.min(remaining, capacity);
-                if (inserting > 0) {
-                    if (type == Actionable.MODULATE) {
-                        FluidStack filled = inputFluid.copy();
-                        filled.amount = (int) inserting;
-                        tank.setFluid(filled);
-                        handler.onChange();
-                    }
-                    remaining -= inserting;
-                    if (remaining <= 0) return null;
-                }
-            }
-        }
-
-        // Void absorbs remaining
-        if (handler.isVoid() && remaining > 0 && remaining < toInsert) {
-            return null;
-        }
-
-        if (remaining >= toInsert) return input;
+        if (remaining >= input.getStackSize()) return input;
 
         IAEFluidStack result = input.copy();
         result.setStackSize(remaining);
@@ -119,24 +66,15 @@ public class DrawerMEFluidHandler implements IDrawerMEInventoryHandler<IAEFluidS
         FluidStack requestFluid = request.getFluidStack();
         long toExtract = request.getStackSize();
         long extracted = 0;
+        boolean simulate = mode == Actionable.SIMULATE;
 
-        for (CustomFluidTank tank : handler.getTanks()) {
-            FluidStack current = tank.getFluid();
-            if (current != null && current.amount > 0 && current.isFluidEqual(requestFluid)) {
-                long available = handler.isCreative() ? toExtract : current.amount;
-                long extracting = Math.min(toExtract - extracted, available);
-                if (extracting > 0) {
-                    if (mode == Actionable.MODULATE && !handler.isCreative()) {
-                        current.amount -= (int) extracting;
-                        if (current.amount <= 0) {
-                            tank.setFluid(null);
-                        }
-                        handler.onChange();
-                    }
-                    extracted += extracting;
-                    if (extracted >= toExtract) break;
-                }
-            }
+        for (int i = 0; i < handler.getTanksCount(); i++) {
+            FluidStack stored = handler.getStoredFluid(i);
+            if (stored == null || stored.amount <= 0 || !stored.isFluidEqual(requestFluid)) continue;
+
+            long ext = handler.drainLong(i, toExtract - extracted, simulate);
+            extracted += ext;
+            if (extracted >= toExtract) break;
         }
 
         if (extracted <= 0) return null;
@@ -148,14 +86,16 @@ public class DrawerMEFluidHandler implements IDrawerMEInventoryHandler<IAEFluidS
 
     @Override
     public IItemList<IAEFluidStack> getAvailableItems(IItemList<IAEFluidStack> out) {
-        for (CustomFluidTank tank : handler.getTanks()) {
-            FluidStack current = tank.getFluid();
-            if (current != null && current.amount > 0) {
-                IAEFluidStack aeStack = channel.createStack(current);
-                if (aeStack != null) {
-                    aeStack.setStackSize(handler.isCreative() ? Long.MAX_VALUE : current.amount);
-                    out.addStorage(aeStack);
-                }
+        for (int i = 0; i < handler.getTanksCount(); i++) {
+            FluidStack stored = handler.getStoredFluid(i);
+            if (stored == null || stored.amount <= 0) continue;
+            long amount = handler.getStoredFluidAmount(i);
+            if (amount <= 0) continue;
+
+            IAEFluidStack aeStack = channel.createStack(stored);
+            if (aeStack != null) {
+                aeStack.setStackSize(amount);
+                out.addStorage(aeStack);
             }
         }
         return out;
@@ -175,9 +115,9 @@ public class DrawerMEFluidHandler implements IDrawerMEInventoryHandler<IAEFluidS
     public boolean isPrioritized(IAEFluidStack input) {
         if (input == null) return false;
         FluidStack inputFluid = input.getFluidStack();
-        for (CustomFluidTank tank : handler.getTanks()) {
-            FluidStack current = tank.getFluid();
-            if (current != null && current.amount > 0 && current.isFluidEqual(inputFluid)) {
+        for (int i = 0; i < handler.getTanksCount(); i++) {
+            FluidStack stored = handler.getStoredFluid(i);
+            if (stored != null && stored.amount > 0 && stored.isFluidEqual(inputFluid)) {
                 return true;
             }
         }
@@ -189,17 +129,11 @@ public class DrawerMEFluidHandler implements IDrawerMEInventoryHandler<IAEFluidS
         if (input == null) return false;
         FluidStack inputFluid = input.getFluidStack();
 
-        for (CustomFluidTank tank : handler.getTanks()) {
-            FluidStack current = tank.getFluid();
-            if (current == null || current.amount <= 0) {
-                if (handler.isLocked() && tank.getLockedFluid() != null) {
-                    if (tank.getLockedFluid().isFluidEqual(inputFluid)) return true;
-                    continue;
-                }
-                return true;
-            }
-            if (current.isFluidEqual(inputFluid)) {
-                if (current.amount < tank.getCapacity()) return true;
+        for (int i = 0; i < handler.getTanksCount(); i++) {
+            FluidStack stored = handler.getStoredFluid(i);
+            if (stored == null || stored.amount <= 0) return true;
+            if (stored.isFluidEqual(inputFluid)) {
+                if (handler.getStoredFluidAmount(i) < handler.getLongCapacity(i)) return true;
                 if (handler.isVoid()) return true;
             }
         }

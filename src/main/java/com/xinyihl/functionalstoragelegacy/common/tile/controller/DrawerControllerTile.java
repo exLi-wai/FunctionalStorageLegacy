@@ -208,6 +208,14 @@ public class DrawerControllerTile extends ControllableDrawerTile {
         return inventoryHandler;
     }
 
+    public ControllerItemHandler getControllerItemHandler() {
+        return inventoryHandler;
+    }
+
+    public ControllerFluidHandler getControllerFluidHandler() {
+        return fluidHandler;
+    }
+
     @Override
     public boolean hasCapability(@Nonnull Capability<?> capability, @Nullable EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) return true;

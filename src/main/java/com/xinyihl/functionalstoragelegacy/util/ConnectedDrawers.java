@@ -1,5 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.util;
 
+import com.xinyihl.functionalstoragelegacy.api.IBigFluidHandler;
+import com.xinyihl.functionalstoragelegacy.api.IBigItemHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.controller.ControllerExtensionTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.controller.DrawerControllerTile;
@@ -27,8 +29,8 @@ public class ConnectedDrawers {
 
     private final List<Long> connectedDrawerPositions;
     private final List<Long> linkedExtensionPositions;
-    private final List<IItemHandler> itemHandlers;
-    private final List<IFluidHandler> fluidHandlers;
+    private final List<IBigItemHandler> itemHandlers;
+    private final List<IBigFluidHandler> fluidHandlers;
     private BlockPos controllerPos;
     private World world;
 
@@ -98,11 +100,11 @@ public class ConnectedDrawers {
             }
             if (te.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null)) {
                 IItemHandler ih = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
-                if (ih != null) itemHandlers.add(ih);
+                if (ih instanceof IBigItemHandler) itemHandlers.add((IBigItemHandler) ih);
             }
             if (te.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
                 IFluidHandler fh = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null);
-                if (fh != null) fluidHandlers.add(fh);
+                if (fh instanceof IBigFluidHandler) fluidHandlers.add((IBigFluidHandler) fh);
             }
         }
     }
@@ -141,11 +143,11 @@ public class ConnectedDrawers {
 
                     if (te.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null)) {
                         IItemHandler ih = te.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
-                        if (ih != null) itemHandlers.add(ih);
+                        if (ih instanceof IBigItemHandler) itemHandlers.add((IBigItemHandler) ih);
                     }
                     if (te.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
                         IFluidHandler fh = te.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null);
-                        if (fh != null) fluidHandlers.add(fh);
+                        if (fh instanceof IBigFluidHandler) fluidHandlers.add((IBigFluidHandler) fh);
                     }
 
                     queue.add(neighbor);
@@ -190,11 +192,11 @@ public class ConnectedDrawers {
         linkedExtensionPositions.removeIf(l -> l == pos.toLong());
     }
 
-    public List<IItemHandler> getItemHandlers() {
+    public List<IBigItemHandler> getItemHandlers() {
         return itemHandlers;
     }
 
-    public List<IFluidHandler> getFluidHandlers() {
+    public List<IBigFluidHandler> getFluidHandlers() {
         return fluidHandlers;
     }
 
