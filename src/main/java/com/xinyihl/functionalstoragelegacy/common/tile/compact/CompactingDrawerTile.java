@@ -50,6 +50,7 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
             public void onChange() {
                 CompactingDrawerTile.this.markDirty();
                 CompactingDrawerTile.this.sendUpdatePacket();
+                CompactingDrawerTile.this.onInventoryContentsChanged();
             }
 
             @Override

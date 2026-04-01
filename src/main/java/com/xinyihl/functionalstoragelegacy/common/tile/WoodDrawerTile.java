@@ -51,6 +51,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
             public void onChange() {
                 WoodDrawerTile.this.markDirty();
                 WoodDrawerTile.this.sendUpdatePacket();
+                WoodDrawerTile.this.onInventoryContentsChanged();
             }
 
             @Override

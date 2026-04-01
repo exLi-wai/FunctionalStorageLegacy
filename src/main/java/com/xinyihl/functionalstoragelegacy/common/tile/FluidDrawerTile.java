@@ -46,6 +46,7 @@ public class FluidDrawerTile extends ControllableDrawerTile {
             public void onChange() {
                 FluidDrawerTile.this.markDirty();
                 FluidDrawerTile.this.sendUpdatePacket();
+                FluidDrawerTile.this.onInventoryContentsChanged();
             }
 
             @Override

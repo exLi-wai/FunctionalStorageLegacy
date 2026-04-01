@@ -4,12 +4,11 @@ import com.xinyihl.functionalstoragelegacy.FunctionalStorageLegacy;
 import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
 import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
 import com.xinyihl.functionalstoragelegacy.client.render.DrawerOptions;
+import com.xinyihl.functionalstoragelegacy.common.integration.ae2.AE2Compat;
 import com.xinyihl.functionalstoragelegacy.common.item.ConfigurationToolItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.StorageUpgradeItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UpgradeItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.UtilityUpgradeItem;
-import com.xinyihl.functionalstoragelegacy.common.integration.ae2.AE2Compat;
-import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import com.xinyihl.functionalstoragelegacy.misc.RegistrationHandler;
 import com.xinyihl.functionalstoragelegacy.util.ItemUtil;
 import net.minecraft.block.state.IBlockState;
@@ -569,6 +568,30 @@ public abstract class ControllableDrawerTile extends TileEntity implements ITick
 
     public void invalidateAE2Accessor() {
         ae2Accessor = null;
+    }
+
+    /**
+     * Notify the AE2 monitor that the underlying inventory has changed.
+     * Safe to call even when AE2 is not loaded.
+     */
+    public void notifyAE2Change() {
+        if (ae2Accessor != null && AE2Compat.isLoaded()) {
+            AE2Compat.notifyChange(ae2Accessor);
+        }
+    }
+
+    /**
+     * Called when the drawer's inventory contents change.
+     * Notifies both this tile's AE2 monitor and the controller's monitor (if connected).
+     */
+    protected void onInventoryContentsChanged() {
+        notifyAE2Change();
+        if (controllerPos != null && world != null && world.isBlockLoaded(controllerPos)) {
+            TileEntity te = world.getTileEntity(controllerPos);
+            if (te instanceof ControllableDrawerTile) {
+                ((ControllableDrawerTile) te).notifyAE2Change();
+            }
+        }
     }
 
     /**

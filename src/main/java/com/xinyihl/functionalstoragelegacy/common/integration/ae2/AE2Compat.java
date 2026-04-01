@@ -26,4 +26,8 @@ public class AE2Compat {
     public static Object createAccessor(ControllableDrawerTile tile) {
         return AE2CapabilityHelper.createAccessor(tile);
     }
+
+    public static void notifyChange(Object accessor) {
+        AE2CapabilityHelper.notifyChange(accessor);
+    }
 }

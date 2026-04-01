@@ -52,6 +52,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
 
             if (storage != null && storage.needUpdate()) {
                 sendUpdatePacket();
+                onInventoryContentsChanged();
             }
         }
     }
