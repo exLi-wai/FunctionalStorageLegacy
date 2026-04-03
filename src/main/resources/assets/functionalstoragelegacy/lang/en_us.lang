@@ -129,7 +129,7 @@ configurationtool.configmode.indicator.mode_0=Off
 configurationtool.configmode.indicator.mode_1=On (When Full)
 configurationtool.configmode.indicator.mode_2=On (When Empty)
 configurationtool.configmode.indicator.mode_3=On (Always)
-configurationtool.use=Right-click a drawer to apply. Sneak+right-click air to cycle mode.
+configurationtool.use=Right-click a drawer to apply. Sneak+right-click air to cycle mode. Sneak Right ButtonDrawer ToLockTheDrawer.
 
 # GUI
 gui.functionalstorage.open_gui=Open GUI
