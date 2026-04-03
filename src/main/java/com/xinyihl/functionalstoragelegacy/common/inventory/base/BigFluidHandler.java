@@ -192,7 +192,7 @@ public abstract class BigFluidHandler implements IBigFluidHandler {
     }
 
     public int getCapacityPerTank() {
-        return (int) Math.min(getLongCapacityPerTank(), Integer.MAX_VALUE / 2);
+        return (int) Math.min(getLongCapacityPerTank(), Integer.MAX_VALUE);
     }
 
     public long getLongCapacityPerTank() {
@@ -391,7 +391,7 @@ public abstract class BigFluidHandler implements IBigFluidHandler {
         @Override
         public int getCapacity() {
             int cap = capacitySupplier.getAsInt();
-            return Math.max(0, Math.min(cap, Integer.MAX_VALUE / 2));
+            return Math.max(0, cap);
         }
 
         @Override

@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.common.integration.top;
 
 import com.xinyihl.functionalstoragelegacy.Tags;
+import com.xinyihl.functionalstoragelegacy.api.IBigItemHandler;
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.EnderDrawerTile;
@@ -118,7 +119,13 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
             for (int i = 0; i < handler.getSlots(); i++) {
                 ItemStack stack = handler.getStackInSlot(i);
                 if (!stack.isEmpty() && stack.getCount() > 0) {
-                    items.add(new ItemEntry(iconStack(stack), safeAmount(stack.getCount()), safeCapacity(handler.getSlotLimit(i))));
+                    long amount = handler instanceof IBigItemHandler
+                            ? ((IBigItemHandler) handler).getStoredAmount(i)
+                            : stack.getCount();
+                    long slotLimit = handler instanceof IBigItemHandler
+                            ? ((IBigItemHandler) handler).getLongSlotLimit(i)
+                            : handler.getSlotLimit(i);
+                    items.add(new ItemEntry(iconStack(stack), safeAmount(amount), safeCapacity(slotLimit)));
                 }
             }
         }
@@ -133,7 +140,6 @@ public class TileTOPDataProvider implements IProbeInfoProvider {
         if (fluidHandler == null) {
             return fluids;
         }
-
         IFluidTankProperties[] properties = fluidHandler.getTankProperties();
         for (IFluidTankProperties property : properties) {
             FluidStack fluid = property.getContents();
