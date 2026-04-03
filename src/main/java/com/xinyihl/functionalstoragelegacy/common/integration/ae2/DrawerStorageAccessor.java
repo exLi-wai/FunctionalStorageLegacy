@@ -42,13 +42,4 @@ public class DrawerStorageAccessor implements IStorageMonitorableAccessor {
             }
         };
     }
-
-    /**
-     * Notify the AE2 monitors that the underlying inventory has changed externally.
-     * Called when items/fluids are inserted or extracted outside of the ME system.
-     */
-    public void notifyChange() {
-        if (itemMonitor != null) itemMonitor.forceUpdate();
-        if (fluidMonitor != null) fluidMonitor.forceUpdate();
-    }
 }

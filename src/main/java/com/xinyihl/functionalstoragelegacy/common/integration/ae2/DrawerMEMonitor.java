@@ -3,114 +3,101 @@ package com.xinyihl.functionalstoragelegacy.common.integration.ae2;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.storage.IMEInventoryHandler;
 import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.IMEMonitorHandlerReceiver;
 import appeng.api.storage.IStorageChannel;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.storage.data.IItemList;
+import appeng.me.storage.ITickingMonitor;
 
 import java.util.*;
 
 /**
  * Generic IMEMonitor implementation wrapping an IMEInventoryHandler.
- * Manages change listeners for AE2 network notifications.
- * Supports detecting external inventory changes via {@link #forceUpdate()}.
+ * Implements ITickingMonitor so AE2 storage bus can poll for external changes
+ * (e.g. hopper, pipe, player interaction) via periodic onTick() calls.
+ * Pattern follows AE2's ItemHandlerAdapter + InventoryCache approach.
  */
-public class DrawerMEMonitor<T extends IAEStack<T>> implements IMEMonitor<T> {
+public class DrawerMEMonitor<T extends IAEStack<T>> implements IMEMonitor<T>, ITickingMonitor {
 
     private final IMEInventoryHandler<T> handler;
     private final IStorageChannel<T> channel;
     private final Map<IMEMonitorHandlerReceiver<T>, Object> listeners = new HashMap<>();
+    private IActionSource mySource;
     private IItemList<T> cachedList;
-    private boolean suppressExternalNotify = false;
 
     public DrawerMEMonitor(IMEInventoryHandler<T> handler, IStorageChannel<T> channel) {
         this.handler = handler;
         this.channel = channel;
+        this.cachedList = channel.createList();
+        handler.getAvailableItems(this.cachedList);
     }
+
+    // ---- ITickingMonitor ----
 
     @Override
-    public T injectItems(T input, Actionable type, IActionSource src) {
-        suppressExternalNotify = true;
-        T result = handler.injectItems(input, type, src);
-        suppressExternalNotify = false;
-        if (type == Actionable.MODULATE) {
-            long injected = input.getStackSize() - (result != null ? result.getStackSize() : 0);
-            if (injected > 0) {
-                T diff = input.copy();
-                diff.setStackSize(injected);
-                notifyListeners(diff, src);
-            }
-            refreshCache();
-        }
-        return result;
-    }
-
-    @Override
-    public T extractItems(T request, Actionable mode, IActionSource src) {
-        suppressExternalNotify = true;
-        T result = handler.extractItems(request, mode, src);
-        suppressExternalNotify = false;
-        if (mode == Actionable.MODULATE && result != null) {
-            T diff = result.copy();
-            diff.setStackSize(-result.getStackSize());
-            notifyListeners(diff, src);
-            refreshCache();
-        }
-        return result;
-    }
-
-    /**
-     * Detect external inventory changes (e.g. hopper, pipe, player interaction)
-     * by comparing current state against cached snapshot.
-     * Called from the tile entity when the underlying inventory changes.
-     */
-    public void forceUpdate() {
-        if (suppressExternalNotify || listeners.isEmpty()) return;
-
+    public TickRateModulation onTick() {
         IItemList<T> currentList = channel.createList();
         handler.getAvailableItems(currentList);
 
-        if (cachedList == null) {
-            cachedList = currentList;
-            return;
+        // Compute diff: negate cached, add current, collect non-zero
+        for (T cached : cachedList) {
+            cached.setStackSize(-cached.getStackSize());
+        }
+        for (T current : currentList) {
+            cachedList.add(current);
         }
 
         List<T> changes = new ArrayList<>();
-
-        // Find increases and new items
-        for (T current : currentList) {
-            T old = cachedList.findPrecise(current);
-            long oldSize = old != null ? old.getStackSize() : 0;
-            long diff = current.getStackSize() - oldSize;
-            if (diff != 0) {
-                T change = current.copy();
-                change.setStackSize(diff);
-                changes.add(change);
-            }
-        }
-
-        // Find removed items
-        for (T old : cachedList) {
-            T current = currentList.findPrecise(old);
-            if (current == null) {
-                T change = old.copy();
-                change.setStackSize(-old.getStackSize());
-                changes.add(change);
+        for (T entry : cachedList) {
+            if (entry.getStackSize() != 0) {
+                changes.add(entry);
             }
         }
 
         cachedList = currentList;
 
         if (!changes.isEmpty()) {
-            postChanges(changes, null);
+            postDifference(changes);
+            return TickRateModulation.URGENT;
         }
+        return TickRateModulation.SLOWER;
     }
 
-    private void refreshCache() {
-        cachedList = channel.createList();
-        handler.getAvailableItems(cachedList);
+    @Override
+    public void setActionSource(IActionSource source) {
+        this.mySource = source;
+    }
+
+    // ---- IMEInventory ----
+
+    @Override
+    public T injectItems(T input, Actionable type, IActionSource src) {
+        T result = handler.injectItems(input, type, src);
+        if (type == Actionable.MODULATE) {
+            long injected = input.getStackSize() - (result != null ? result.getStackSize() : 0);
+            if (injected > 0) {
+                T diff = input.copy();
+                diff.setStackSize(injected);
+                cachedList.add(diff);
+                postDifference(Collections.singletonList(diff));
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public T extractItems(T request, Actionable mode, IActionSource src) {
+        T result = handler.extractItems(request, mode, src);
+        if (mode == Actionable.MODULATE && result != null) {
+            T diff = result.copy();
+            diff.setStackSize(-result.getStackSize());
+            cachedList.add(diff);
+            postDifference(Collections.singletonList(diff));
+        }
+        return result;
     }
 
     @Override
@@ -121,15 +108,15 @@ public class DrawerMEMonitor<T extends IAEStack<T>> implements IMEMonitor<T> {
     @Override
     public IItemList<T> getStorageList() {
         IItemList<T> list = channel.createList();
-        getAvailableItems(list);
-        refreshCache();
-        return list;
+        return getAvailableItems(list);
     }
 
     @Override
     public IStorageChannel<T> getChannel() {
         return channel;
     }
+
+    // ---- IMEInventoryHandler delegated ----
 
     @Override
     public AccessRestriction getAccess() {
@@ -161,6 +148,8 @@ public class DrawerMEMonitor<T extends IAEStack<T>> implements IMEMonitor<T> {
         return handler.validForPass(pass);
     }
 
+    // ---- IBaseMonitor ----
+
     @Override
     public void addListener(IMEMonitorHandlerReceiver<T> l, Object verificationToken) {
         listeners.put(l, verificationToken);
@@ -171,18 +160,15 @@ public class DrawerMEMonitor<T extends IAEStack<T>> implements IMEMonitor<T> {
         listeners.remove(l);
     }
 
-    private void notifyListeners(T changed, IActionSource src) {
-        if (changed == null) return;
-        postChanges(Collections.singletonList(changed), src);
-    }
+    // ---- Internal ----
 
-    private void postChanges(Iterable<T> changes, IActionSource src) {
+    private void postDifference(Iterable<T> changes) {
         Iterator<Map.Entry<IMEMonitorHandlerReceiver<T>, Object>> it = listeners.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<IMEMonitorHandlerReceiver<T>, Object> entry = it.next();
             IMEMonitorHandlerReceiver<T> receiver = entry.getKey();
             if (receiver.isValid(entry.getValue())) {
-                receiver.postChange(this, changes, src);
+                receiver.postChange(this, changes, mySource);
             } else {
                 it.remove();
             }

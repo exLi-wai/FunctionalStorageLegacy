@@ -27,13 +27,7 @@ public class AE2CapabilityHelper {
 
     @SuppressWarnings("unchecked")
     public static <T> T castAccessor(IStorageMonitorableAccessor accessor) {
-        return Capabilities.STORAGE_MONITORABLE_ACCESSOR.cast(accessor);
-    }
-
-    public static void notifyChange(Object accessor) {
-        if (accessor instanceof DrawerStorageAccessor) {
-            ((DrawerStorageAccessor) accessor).notifyChange();
-        }
+        return (T) Capabilities.STORAGE_MONITORABLE_ACCESSOR.cast(accessor);
     }
 
     public static Object createAccessor(ControllableDrawerTile tile) {
