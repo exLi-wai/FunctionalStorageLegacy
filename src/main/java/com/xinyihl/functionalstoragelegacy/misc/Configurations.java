@@ -129,52 +129,52 @@ public final class Configurations {
 
         @Config.Name("stoneGenerationT1")
         @Config.Comment("Stone Generation Upgrade T1 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float stoneGenerationT1 = 2.0f;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int stoneGenerationT1 = 1;
 
         @Config.Name("stoneGenerationT2")
         @Config.Comment("Stone Generation Upgrade T2 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float stoneGenerationT2 = 4.0f;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int stoneGenerationT2 = 2;
 
         @Config.Name("stoneGenerationT3")
         @Config.Comment("Stone Generation Upgrade T3 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float stoneGenerationT3 = 8.0f;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int stoneGenerationT3 = 4;
 
         @Config.Name("stoneGenerationT4")
         @Config.Comment("Stone Generation Upgrade T4 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float stoneGenerationT4 = 16.0f;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int stoneGenerationT4 = 8;
 
         @Config.Name("universalGeneratorT1")
         @Config.Comment("Universal Generator T1 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float UNIVERSAL_GENERATION_RATE_T1 = 2.0F;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int UNIVERSAL_GENERATION_RATE_T1 = 1;
 
         @Config.Name("universalGeneratorT2")
         @Config.Comment("Universal Generator T2 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float UNIVERSAL_GENERATION_RATE_T2 = 4.0F;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int UNIVERSAL_GENERATION_RATE_T2 = 2;
 
         @Config.Name("universalGeneratorT3")
         @Config.Comment("Universal Generator T3 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float UNIVERSAL_GENERATION_RATE_T3 = 8.0F;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int UNIVERSAL_GENERATION_RATE_T3 = 4;
 
         @Config.Name("universalGeneratorT4")
         @Config.Comment("Universal Generator T4 generation rate")
-        @Config.RangeDouble(min = 1.0D, max = Double.MAX_VALUE)
-        public float UNIVERSAL_GENERATION_RATE_T4 = 16.0F;
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int UNIVERSAL_GENERATION_RATE_T4 = 8;
+
+        @Config.Name("universalItemsGenerationTick")
+        @Config.Comment("Universal Generator Items generation tick")
+        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
+        public int UNIVERSAL_ITEMS_GENERATION_TICK = 1;
 
         @Config.Name("universalItemsGeneration")
         @Config.Comment("Universal Generator Items generation")
         public String UNIVERSAL_ITEMS_GENERATION = "minecraft:sand";
-
-        @Config.Name("universalItemsGenerationAmount")
-        @Config.Comment("Universal Generator Items generation amount")
-        @Config.RangeInt(min = 1, max = Integer.MAX_VALUE)
-        public int UNIVERSAL_ITEMS_GENERATION_AMOUNT = 1;
 
         @Config.Name("universalItemsGenerationRegistered")
         @Config.Comment("Universal Generator Items generation registered")

@@ -78,7 +78,8 @@ public class UniversalItemGeneration extends UtilityUpgradeItem {
         if (!item.getHasSubtypes()) {
             meta = 0;
         }
-        return new ItemStack(item, Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_AMOUNT, meta);
+
+        return new ItemStack(item, Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_TICK, meta);
     }
 
     public static ItemStack getItemGeneration() {
@@ -101,35 +102,33 @@ public class UniversalItemGeneration extends UtilityUpgradeItem {
         }
         NBTTagCompound nbt = upgradeStack.getTagCompound();
 
-        TimerUtil.updateAndExecute(nbt, getGenerationInterval(), () -> generatItem(tile));
-    }
-
-    private int getGenerationInterval() {
-        return (int) Math.ceil(20.0 / tier.getGenerationRate());
+        TimerUtil.updateAndExecute(nbt, 1, () -> generatItem(tile));
     }
 
     private boolean generatItem(ControllableDrawerTile tile) {
         IItemHandler handler = tile.getItemHandler();
         if (handler == null) return false;
 
-        ItemStack itemToGenerate = getItemGeneration();
-        if (itemToGenerate.isEmpty()) {
+        ItemStack baseItem = getItemGeneration();
+        if (baseItem.isEmpty()) {
             return false;
         }
 
+        ItemStack itemToGenerate = baseItem.copy();
+        itemToGenerate.setCount(tier.getGenerationRate());
+
         if (tile instanceof CompactingDrawerTile) {
-            return GenerationTreatment(tile);
+            return GenerationTreatment(tile, itemToGenerate);
         }
 
         ItemStack remainder = ItemHandlerHelper.insertItemStacked(handler, itemToGenerate, false);
         return remainder.isEmpty();
     }
 
-    private boolean GenerationTreatment(ControllableDrawerTile tile) {
+    private boolean GenerationTreatment(ControllableDrawerTile tile, ItemStack itemToGenerate) {
         IItemHandler handler = tile.getItemHandler();
         if (handler == null) return false;
 
-        ItemStack itemToGenerate = getItemGeneration().copy();
         if (itemToGenerate.isEmpty()) return false;
 
         if (handler instanceof CompactingInventoryHandler) {
@@ -149,7 +148,7 @@ public class UniversalItemGeneration extends UtilityUpgradeItem {
         super.addInformation(stack, worldIn, tooltip, flagIn);
 
         loadTargetItemIfNeeded();
-        String rateText = String.format("%.1f/s", tier.getGenerationRate() * Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_AMOUNT);
+        String rateText = String.format("%d/" + " " +Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_TICK + "t", tier.getGenerationRate());
         tooltip.add(TextFormatting.YELLOW + I18n.format("item.functionalstoragelegacy.universal_generation_upgrade.rate") + TextFormatting.WHITE + rateText);
 
         if (TARGET_ITEM_CACHE != null && !TARGET_ITEM_CACHE.isEmpty()) {
@@ -164,21 +163,29 @@ public class UniversalItemGeneration extends UtilityUpgradeItem {
     }
 
     public enum GenerationTier {
-        T1(Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T1, 1),
-        T2(Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T2, 2),
-        T3(Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T3, 3),
-        T4(Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T4, 4);
+        T1(1),
+        T2(2),
+        T3(3),
+        T4(4);
 
-        private final float generationRate;
         private final int tier;
 
-        GenerationTier(float generationRate, int tier) {
-            this.generationRate = generationRate;
+        GenerationTier(int tier) {
             this.tier = tier;
         }
 
-        public float getGenerationRate() {
-            return generationRate;
+        public int getGenerationRate() {
+            switch (this) {
+                case T2:
+                    return Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T2;
+                case T3:
+                    return Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T3;
+                case T4:
+                    return Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T4;
+                case T1:
+                default:
+                    return Configurations.GENERATION.UNIVERSAL_GENERATION_RATE_T1;
+            }
         }
 
         public int getTier() {

@@ -32,42 +32,38 @@ public class StoneGenerationUpgradeItem extends UtilityUpgradeItem {
 
     @Override
     public void onTick(ControllableDrawerTile tile, ItemStack upgradeStack, int upgradeSlot) {
-
+    
         if (tile.getWorld().isRemote) {
             return;
         }
-
+    
         if (!upgradeStack.hasTagCompound()) {
             upgradeStack.setTagCompound(new NBTTagCompound());
         }
         NBTTagCompound nbt = upgradeStack.getTagCompound();
-
-        TimerUtil.updateAndExecute(nbt, getGenerationInterval(), () -> GenerationTreatment(tile));
+    
+        TimerUtil.updateAndExecute(nbt, 1, () -> GenerationTreatment(tile, tier));
     }
-
-    private int getGenerationInterval() {
-        return (int) Math.ceil(20.0 / tier.getGenerationRate());
-    }
-
-
-    public static boolean GenerationTreatment(ControllableDrawerTile tile) {
+        
+    public static boolean GenerationTreatment(ControllableDrawerTile tile, StoneTier tier) {
         IItemHandler handler = tile.getItemHandler();
         if (handler == null) {
             return false;
-        } else {
-            if (handler instanceof CompactingInventoryHandler) {
-                CompactingInventoryHandler compactingHandler = (CompactingInventoryHandler) handler;
-                if (!compactingHandler.isSetup()) {
-                    ItemStack stoneStack = new ItemStack(Blocks.COBBLESTONE, 1);
-                    if (CompactingUtil.CompressionDrawertrEatment(tile, stoneStack, compactingHandler)) {
-                        return false;
-                    }
-                }
-            }
-
-            ItemStack stoneStack = new ItemStack(Blocks.COBBLESTONE, 1);
-            return CompactingUtil.ItemRemainder(tile, handler, stoneStack);
         }
+
+        if (handler instanceof CompactingInventoryHandler) {
+            CompactingInventoryHandler compactingHandler = (CompactingInventoryHandler) handler;
+            if (!compactingHandler.isSetup()) {
+                ItemStack stoneStack = new ItemStack(Blocks.COBBLESTONE, tier.getGenerationRate());
+                if (CompactingUtil.CompressionDrawertrEatment(tile, stoneStack, compactingHandler)) {
+                    return false;
+                }
+                return true;
+            }
+        }
+    
+        ItemStack stoneStack = new ItemStack(Blocks.COBBLESTONE, tier.getGenerationRate());
+        return CompactingUtil.ItemRemainder(tile, handler, stoneStack);
     }
 
     @SideOnly(Side.CLIENT)
@@ -75,7 +71,7 @@ public class StoneGenerationUpgradeItem extends UtilityUpgradeItem {
     public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
         super.addInformation(stack, worldIn, tooltip, flagIn);
 
-        String rateText = String.format("%.1f/s", tier.getGenerationRate());
+        String rateText = String.format("%d/t", tier.getGenerationRate());
         tooltip.add(TextFormatting.YELLOW + I18n.format("item.functionalstoragelegacy.generation_upgrade.rate") + TextFormatting.WHITE + rateText);
 
     }
@@ -92,7 +88,7 @@ public class StoneGenerationUpgradeItem extends UtilityUpgradeItem {
             this.tier = tier;
         }
 
-        public float getGenerationRate() {
+        public int getGenerationRate() {
             switch (this) {
                 case T2:
                     return Configurations.GENERATION.stoneGenerationT2;
