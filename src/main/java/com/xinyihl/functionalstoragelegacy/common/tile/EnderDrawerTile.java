@@ -52,6 +52,7 @@ public class EnderDrawerTile extends ControllableDrawerTile {
 
             if (storage != null && storage.needUpdate()) {
                 sendUpdatePacket();
+                storage.setUpdate();
             }
         }
     }
@@ -165,16 +166,15 @@ public class EnderDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
+    public void handleUpdateTag(@Nonnull NBTTagCompound tag) {
+        super.handleUpdateTag(tag);
+        readSyncedInventory(tag);
+    }
+
+    @Override
     public void onDataPacket(@Nonnull NetworkManager net, SPacketUpdateTileEntity pkt) {
         super.onDataPacket(net, pkt);
-        NBTTagCompound nbt = pkt.getNbtCompound();
-        if (nbt.hasKey("EnderInventory")) {
-            if (this.storage == null) {
-                this.storage = new EnderInventoryHandler() {
-                };
-            }
-            this.storage.deserializeNBT(nbt.getCompoundTag("EnderInventory"));
-        }
+        readSyncedInventory(pkt.getNbtCompound());
     }
 
     @Override
@@ -183,6 +183,16 @@ public class EnderDrawerTile extends ControllableDrawerTile {
             this.frequency = compound.getString("Frequency");
         }
         super.readFromNBT(compound);
+    }
+
+    private void readSyncedInventory(NBTTagCompound nbt) {
+        if (nbt.hasKey("EnderInventory")) {
+            if (this.storage == null) {
+                this.storage = new EnderInventoryHandler() {
+                };
+            }
+            this.storage.deserializeNBT(nbt.getCompoundTag("EnderInventory"));
+        }
     }
 
     @Override
