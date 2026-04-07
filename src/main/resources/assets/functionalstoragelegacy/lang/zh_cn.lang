@@ -119,8 +119,7 @@ configurationtool.configmode.indicator.mode_0=关闭
 configurationtool.configmode.indicator.mode_1=开启（满时）
 configurationtool.configmode.indicator.mode_2=开启（空时）
 configurationtool.configmode.indicator.mode_3=开启（始终）
-configurationtool.use=右键单击抽屉以应用。\n潜行+右键单击空气以切换模式。
-
+configurationtool.use=右键单击抽屉以应用。\n潜行+右键单击空气以切换模式。\n潜行右键抽屉锁定抽屉。
 # GUI
 gui.functionalstorage.open_gui=打开界面
 gui.functionalstoragelegacy.item=物品：
