@@ -41,7 +41,46 @@ public class StorageUpgradeItem extends UpgradeItem {
     }
 
     public Map<ModifierType, UpgradeModifier> getModifiers() {
-        return tier.getModifiers();
+        switch (tier) {
+            case IRON: {
+                Map<ModifierType, UpgradeModifier> map = new EnumMap<>(ModifierType.class);
+                map.put(ModifierType.ITEM_STORAGE, new UpgradeModifier.SetBase(1));
+                map.put(ModifierType.FLUID_STORAGE, new UpgradeModifier.SetBase(1));
+                return map;
+            }
+            case COPPER:
+            case GOLD:
+            case DIAMOND:
+            case NETHERITE: {
+                float mult = getItemStorageMultiplier(tier);
+                Map<ModifierType, UpgradeModifier> map = new EnumMap<>(ModifierType.class);
+                map.put(ModifierType.ITEM_STORAGE, new UpgradeModifier.MultiplyFactor(mult));
+                map.put(ModifierType.FLUID_STORAGE, new UpgradeModifier.MultiplyFactor(mult / Configurations.STORAGE.fluidDivisor));
+                map.put(ModifierType.CONTROLLER_RANGE, new UpgradeModifier.AddToBase(mult / Configurations.STORAGE.rangeDivisor));
+                return map;
+            }
+            case MAX:
+            default:
+                return Collections.emptyMap();
+        }
+    }
+
+
+    public float getItemStorageMultiplier(StorageUpgradeItem.StorageTier tier) {
+        switch (tier) {
+            case COPPER:
+                return Configurations.STORAGE.copperMultiplier;
+            case GOLD:
+                return Configurations.STORAGE.goldMultiplier;
+            case DIAMOND:
+                return Configurations.STORAGE.diamondMultiplier;
+            case NETHERITE:
+                return Configurations.STORAGE.netheriteMultiplier;
+            case IRON:
+            case MAX:
+            default:
+                return 1.0f;
+        }
     }
 
     @Override
@@ -58,7 +97,7 @@ public class StorageUpgradeItem extends UpgradeItem {
         } else if (tier == StorageTier.MAX) {
             tooltip.add(TextFormatting.GOLD + new TextComponentTranslation("item.functionalstoragelegacy.max_storage_upgrade.desc").getUnformattedText());
         } else {
-            tooltip.add(TextFormatting.YELLOW + new TextComponentTranslation("item.functionalstoragelegacy.storage_upgrade.multiplier", TextFormatting.WHITE + "" + tier.getItemStorageMultiplier() + "x").getUnformattedText());
+            tooltip.add(TextFormatting.YELLOW + new TextComponentTranslation("item.functionalstoragelegacy.storage_upgrade.multiplier", TextFormatting.WHITE + "" + getItemStorageMultiplier(tier) + "x").getUnformattedText());
         }
     }
 
@@ -79,49 +118,6 @@ public class StorageUpgradeItem extends UpgradeItem {
 
         StorageTier(String name) {
             this.name = name;
-        }
-
-        public Map<ModifierType, UpgradeModifier> getModifiers() {
-            switch (this) {
-                case IRON: {
-                    Map<ModifierType, UpgradeModifier> map = new EnumMap<>(ModifierType.class);
-                    map.put(ModifierType.ITEM_STORAGE, new UpgradeModifier.SetBase(1));
-                    map.put(ModifierType.FLUID_STORAGE, new UpgradeModifier.SetBase(1));
-                    return map;
-                }
-                case COPPER:
-                case GOLD:
-                case DIAMOND:
-                case NETHERITE: {
-                    float mult = getItemStorageMultiplier();
-                    Map<ModifierType, UpgradeModifier> map = new EnumMap<>(ModifierType.class);
-                    map.put(ModifierType.ITEM_STORAGE, new UpgradeModifier.MultiplyFactor(mult));
-                    map.put(ModifierType.FLUID_STORAGE, new UpgradeModifier.MultiplyFactor(mult / Configurations.STORAGE.fluidDivisor));
-                    map.put(ModifierType.CONTROLLER_RANGE, new UpgradeModifier.AddToBase(mult / Configurations.STORAGE.rangeDivisor));
-                    return map;
-                }
-                case MAX:
-                default:
-                    return Collections.emptyMap();
-            }
-        }
-
-        public float getItemStorageMultiplier() {
-            switch (this) {
-                case COPPER:
-                    return Configurations.STORAGE.copperMultiplier;
-                case GOLD:
-                    return Configurations.STORAGE.goldMultiplier;
-                case DIAMOND:
-                    return Configurations.STORAGE.diamondMultiplier;
-                case NETHERITE:
-                    return Configurations.STORAGE.netheriteMultiplier;
-                case MAX:
-                    return 1.0f;
-                case IRON:
-                default:
-                    return 1.0f;
-            }
         }
 
         public boolean isHigherThan(StorageTier other) {
