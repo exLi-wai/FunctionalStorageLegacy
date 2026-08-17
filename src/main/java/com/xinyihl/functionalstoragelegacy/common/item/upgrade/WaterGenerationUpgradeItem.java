@@ -1,5 +1,8 @@
 package com.xinyihl.functionalstoragelegacy.common.item.upgrade;
 
+import com.xinyihl.functionalstoragelegacy.api.storage.BigFluidStack;
+import com.xinyihl.functionalstoragelegacy.api.storage.IBigFluidHandler;
+import com.xinyihl.functionalstoragelegacy.api.storage.StorageAction;
 import com.xinyihl.functionalstoragelegacy.common.tile.FluidDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.misc.Configurations;
@@ -12,12 +15,11 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.List;
 
 public class WaterGenerationUpgradeItem extends UtilityUpgradeItem {
 
@@ -52,7 +54,7 @@ public class WaterGenerationUpgradeItem extends UtilityUpgradeItem {
         }
 
         FluidDrawerTile fluidTile = (FluidDrawerTile) tile;
-        IFluidHandler fluidHandler = fluidTile.getFluidHandler();
+        IBigFluidHandler fluidHandler = fluidTile.getFluidHandler();
         if (fluidHandler == null) {
             return;
         }
@@ -63,26 +65,11 @@ public class WaterGenerationUpgradeItem extends UtilityUpgradeItem {
         }
 
         int amountPerTick = tier.getGenerationRate();
-        FluidStack waterStack = new FluidStack(water, amountPerTick);
-
-        int filled = fluidHandler.fill(waterStack, true);
-
-        if (filled > 0) {
-            tile.markDirty();
-            tile.sendUpdatePacket();
-        }
-
-        else if (fluidTile.isVoid()) {
-            tile.markDirty();
-            tile.sendUpdatePacket();
-        }
+        fluidHandler.fillRouted(new BigFluidStack(new FluidStack(water, 1), amountPerTick), StorageAction.EXECUTE);
     }
 
     public enum WaterGenerationTire {
-        T1(1, Configurations.GENERATION.WATER_GENERATION_T1),
-        T2(2, Configurations.GENERATION.WATER_GENERATION_T2),
-        T3(3, Configurations.GENERATION.WATER_GENERATION_T3),
-        T4(4, Configurations.GENERATION.WATER_GENERATION_T4);
+        T1(1, Configurations.GENERATION.WATER_GENERATION_T1), T2(2, Configurations.GENERATION.WATER_GENERATION_T2), T3(3, Configurations.GENERATION.WATER_GENERATION_T3), T4(4, Configurations.GENERATION.WATER_GENERATION_T4);
 
         private final int tier;
         private final int generationRate;

@@ -1,7 +1,9 @@
 package com.xinyihl.functionalstoragelegacy.common.tile.compact;
 
-import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
-import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
+import com.xinyihl.functionalstoragelegacy.api.storage.*;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.StorageFeature;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.UpgradeAttribute;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.UpgradeState;
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.util.CompactingUtil;
@@ -12,12 +14,10 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -42,19 +42,14 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         super();
         this.handler = createHandler(slots);
         this.hasCheckedRecipes = false;
+        bindStorageHandler(this.handler, () -> this.handler.onChange(StorageChange.reset()));
     }
 
     protected CompactingInventoryHandler createHandler(int slots) {
         return new CompactingInventoryHandler(slots) {
             @Override
-            public void onChange() {
-                CompactingDrawerTile.this.markDirty();
-                CompactingDrawerTile.this.sendUpdatePacket();
-            }
-
-            @Override
-            public float getMultiplier() {
-                return CompactingDrawerTile.this.getStorageMultiplier(8.0f);
+            public double getMultiplier() {
+                return CompactingDrawerTile.this.getStorageMultiplier(8.0D);
             }
 
             @Override
@@ -68,8 +63,8 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
             }
 
             @Override
-            public boolean isVoid() {
-                return CompactingDrawerTile.this.isVoid();
+            public boolean voidsOverflow() {
+                return CompactingDrawerTile.this.voidsOverflow();
             }
 
             @Override
@@ -92,14 +87,9 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
             // Check recipes on first tick
             if (!hasCheckedRecipes) {
-                if (handler.isSetup() && !getParentStack().isEmpty()) {
+                if (handler.isConfigured() && !getParentStack().isEmpty()) {
                     int anchorSlot = getFirstNonEmptySlot();
-                    List<CompactingInventoryHandler.Result> results = CompactingUtil.getCompactingResults(
-                            this.world,
-                            getParentStack(),
-                            getSlotCount(),
-                            anchorSlot
-                    );
+                    List<CompactingInventoryHandler.Tier> results = CompactingUtil.getCompactingResults(this.world, getParentStack(), getSlotCount(), anchorSlot);
                     if (!results.isEmpty()) {
                         applyCompactingResults(results);
                     }
@@ -114,18 +104,17 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
      * Returns the base tier item if setup, empty otherwise.
      */
     private ItemStack getParentStack() {
-        List<CompactingInventoryHandler.Result> results = handler.getResults();
-        if (results.isEmpty()) return ItemStack.EMPTY;
+        List<CompactingInventoryHandler.Tier> tiers = handler.getTiers();
+        if (tiers.isEmpty()) return ItemStack.EMPTY;
         // Return the highest tier non-empty result
-        for (CompactingInventoryHandler.Result result : results) {
-            if (!result.getStack().isEmpty()) return result.getStack();
+        for (CompactingInventoryHandler.Tier tier : tiers) {
+            if (tier.hasTemplate()) return tier.getTemplate();
         }
         return ItemStack.EMPTY;
     }
 
     @Override
-    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing,
-                                   float hitX, float hitY, float hitZ, int slot) {
+    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ, int slot) {
         ItemStack heldStack = player.getHeldItem(hand);
 
         if (super.onSlotActivated(player, hand, facing, hitX, hitY, hitZ, slot)) {
@@ -134,22 +123,22 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
 
         if (slot != -1 && !world.isRemote) {
             // Setup compacting if not yet configured
-            if (!handler.isSetup() && !heldStack.isEmpty()) {
+            if (!handler.isConfigured() && !heldStack.isEmpty()) {
                 ItemStack template = heldStack.copy();
                 template.setCount(1);
-                List<CompactingInventoryHandler.Result> results = CompactingUtil.getCompactingResults(this.world, template, getSlotCount(), slot);
+                List<CompactingInventoryHandler.Tier> results = CompactingUtil.getCompactingResults(this.world, template, getSlotCount(), slot);
                 if (!results.isEmpty()) {
                     applyCompactingResults(results);
                     markDirty();
-                    sendUpdatePacket();
+                    requestUpdatePacket();
                 }
             }
 
             // Insert items
-            if (!heldStack.isEmpty() && handler.isSetup()) {
-                ItemStack result = handler.insertItem(slot, heldStack, true);
+            if (!heldStack.isEmpty() && handler.isConfigured()) {
+                ItemStack result = insertIntoPhysicalSlot(slot, heldStack, true);
                 if (result.getCount() != heldStack.getCount()) {
-                    player.setHeldItem(hand, handler.insertItem(slot, heldStack, false));
+                    player.setHeldItem(hand, insertIntoPhysicalSlot(slot, heldStack, false));
                     return true;
                 }
             }
@@ -159,9 +148,9 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
                 for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
                     ItemStack invStack = player.inventory.getStackInSlot(i);
                     if (!invStack.isEmpty()) {
-                        ItemStack testResult = handler.insertItem(slot, invStack, true);
+                        ItemStack testResult = insertIntoPhysicalSlot(slot, invStack, true);
                         if (testResult.getCount() != invStack.getCount()) {
-                            ItemStack leftover = handler.insertItem(slot, invStack.copy(), false);
+                            ItemStack leftover = insertIntoPhysicalSlot(slot, invStack.copy(), false);
                             player.inventory.setInventorySlotContents(i, leftover);
                         }
                     }
@@ -171,74 +160,84 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
             INTERACTION_LOGGER.put(player.getUniqueID(), System.currentTimeMillis());
         }
 
-        return true;
+        return false;
     }
 
     @Override
     public void onClicked(EntityPlayer player, int slot) {
         if (!world.isRemote && slot != -1 && removeTicks == 0) {
             removeTicks = 3;
-            int amount = player.isSneaking() ? handler.getStackInSlot(slot).getMaxStackSize() : 1;
-            ItemStack extracted = handler.extractItem(slot, amount, false);
+            BigItemStack snapshot = handler.getSnapshot(slot);
+            int amount = player.isSneaking() && snapshot.hasTemplate() ? snapshot.getTemplate().getMaxStackSize() : 1;
+            ItemStack extracted = extractFromPhysicalSlot(slot, amount, false);
             if (!extracted.isEmpty()) {
                 ItemHandlerHelper.giveItemToPlayer(player, extracted);
             }
         }
     }
 
+    private ItemStack insertIntoPhysicalSlot(int slot, ItemStack stack, boolean simulate) {
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        BigItemStack request = new BigItemStack(stack, stack.getCount());
+        TransferResult<BigItemStack, ItemStorageKey> result = handler.insert(slot, request, StorageAction.fromSimulation(simulate));
+        long remaining = result.getRemainingAmount();
+        if (remaining <= 0L) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack remainder = stack.copy();
+        remainder.setCount((int) Math.min(remaining, stack.getCount()));
+        return remainder;
+    }
+
+    private ItemStack extractFromPhysicalSlot(int slot, int amount, boolean simulate) {
+        BigItemStack snapshot = handler.getSnapshot(slot);
+        if (!snapshot.hasTemplate() || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+        int requested = Math.min(amount, snapshot.getTemplate().getMaxStackSize());
+        TransferResult<BigItemStack, ItemStorageKey> result = handler.extract(slot, requested, StorageAction.fromSimulation(simulate));
+        return result.getProcessed().isEmpty() ? ItemStack.EMPTY : result.getProcessed().toItemStack();
+    }
+
     private int getFirstNonEmptySlot() {
-        List<CompactingInventoryHandler.Result> results = handler.getResults();
-        for (int i = 0; i < results.size(); i++) {
-            if (!results.get(i).getStack().isEmpty()) {
+        List<CompactingInventoryHandler.Tier> tiers = handler.getTiers();
+        for (int i = 0; i < tiers.size(); i++) {
+            if (tiers.get(i).hasTemplate()) {
                 return i;
             }
         }
         return 0;
     }
 
-    private void applyCompactingResults(List<CompactingInventoryHandler.Result> compactingResults) {
-        // Pad or trim to match slots
-        List<CompactingInventoryHandler.Result> results = new ArrayList<>(compactingResults);
-        while (results.size() < getSlotCount()) {
-            results.add(new CompactingInventoryHandler.Result(ItemStack.EMPTY, 1));
-        }
-        while (results.size() > getSlotCount()) {
-            results.remove(results.size() - 1);
-        }
-        handler.setResults(results);
+    private void applyCompactingResults(List<CompactingInventoryHandler.Tier> compactingTiers) {
+        handler.configureTiers(compactingTiers);
     }
 
     protected int getSlotCount() {
         return 3;
     }
 
-    public CompactingInventoryHandler getCompactingHandler() {
-        return handler;
-    }
-
     @Override
     protected boolean canApplyUpgradeState(UpgradeState state) {
-        if (state.creative || state.maxStorage) {
+        if (state.hasFeature(StorageFeature.CREATIVE) || state.hasFeature(StorageFeature.MAX_CAPACITY)) {
             return true;
         }
-        float calculated = state.calculate(ModifierType.ITEM_STORAGE, 8.0f);
-        long totalCapacity = (long) ((getSlotCount() == 2 ? 64D * 9D : 64D * 9D * 9D) * calculated);
-        return handler.getTotalInBase() <= totalCapacity;
+        double calculated = state.calculate(UpgradeAttribute.ITEM_CAPACITY, 8.0D);
+        return handler.getStoredBaseAmount() <= handler.getTotalBaseCapacity(calculated);
     }
 
     @Override
     protected void writeCustomData(NBTTagCompound nbt) {
-        nbt.setTag("CompactingInv", handler.serializeNBT());
-        nbt.setInteger("SlotCount", getSlotCount());
+        writeStorage(nbt);
     }
 
     @Override
     protected void readCustomData(NBTTagCompound nbt) {
-        int slots = nbt.hasKey("SlotCount") ? nbt.getInteger("SlotCount") : getSlotCount();
-        handler = createHandler(slots);
-        if (nbt.hasKey("CompactingInv")) {
-            handler.deserializeNBT(nbt.getCompoundTag("CompactingInv"));
-        }
+        handler = createHandler(getSlotCount());
+        handler.deserializeNBT(nbt);
+        finishStorageRead(handler, () -> handler.onChange(StorageChange.reset()));
         hasCheckedRecipes = false;
     }
 
@@ -246,25 +245,28 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
     @Override
     public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
-        compound.setTag("CompactingInv", handler.serializeNBT());
-        compound.setInteger("SlotCount", getSlotCount());
+        writeStorage(compound);
         return compound;
     }
 
     @Override
     public void readFromNBT(@Nonnull NBTTagCompound compound) {
-        int slots = compound.hasKey("SlotCount") ? compound.getInteger("SlotCount") : getSlotCount();
-        handler = createHandler(slots);
+        beginStorageRead();
         super.readFromNBT(compound);
-        if (compound.hasKey("CompactingInv")) {
-            handler.deserializeNBT(compound.getCompoundTag("CompactingInv"));
-        }
+        handler = createHandler(getSlotCount());
+        handler.deserializeNBT(compound);
+        finishStorageRead(handler, () -> handler.onChange(StorageChange.reset()));
         hasCheckedRecipes = false;
     }
 
     @Override
-    public IItemHandler getItemHandler() {
+    public IBigItemHandler getItemHandler() {
         return handler;
+    }
+
+    @Override
+    protected void onLockStateChanged(boolean locked) {
+        handler.applyLockConfiguration(locked);
     }
 
     @Override
@@ -285,20 +287,16 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
     @Override
     public boolean isEverythingEmpty() {
         if (!super.isEverythingEmpty()) return false;
-        return handler.getTotalInBase() == 0 && !handler.isSetup();
+        return handler.getStoredBaseAmount() == 0L && !handler.isConfigured();
     }
 
     @Override
     protected int calculateRedstoneSignal() {
-        if (!handler.isSetup()) return 0;
-        long totalCapacity = 0;
-        long totalStored = 0;
-        for (int i = 0; i < handler.getSlots(); i++) {
-            totalCapacity += handler.getLongSlotLimit(i);
-            totalStored += handler.getStackInSlot(i).getCount();
-        }
+        if (!handler.isConfigured()) return 0;
+        long totalCapacity = handler.getTotalBaseCapacity();
+        long totalStored = handler.getStoredBaseAmount();
         if (totalCapacity == 0) return 0;
-        return (int) ((totalStored / (double) totalCapacity) * 15);
+        return calculateRedstoneSignalForRatio((double) totalStored / (double) totalCapacity);
     }
 
     @Override
@@ -306,7 +304,7 @@ public class CompactingDrawerTile extends ControllableDrawerTile {
         return 3;
     }
 
-    public CompactingInventoryHandler getHandler() {
-        return handler;
+    private void writeStorage(NBTTagCompound nbt) {
+        nbt.setTag("StorageV2", handler.serializeNBT().getCompoundTag("StorageV2"));
     }
 }

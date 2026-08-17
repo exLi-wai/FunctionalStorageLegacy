@@ -1,10 +1,12 @@
 package com.xinyihl.functionalstoragelegacy.common.tile;
 
-import com.xinyihl.functionalstoragelegacy.api.DrawerType;
-import com.xinyihl.functionalstoragelegacy.api.DrawerWoodType;
-import com.xinyihl.functionalstoragelegacy.api.UpgradeState;
-import com.xinyihl.functionalstoragelegacy.api.upgrade.ModifierType;
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.api.storage.*;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.StorageFeature;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.UpgradeAttribute;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.UpgradeState;
+import com.xinyihl.functionalstoragelegacy.common.block.DrawerWoodType;
+import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigItemHandler;
+import com.xinyihl.functionalstoragelegacy.common.storage.DrawerLayout;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -13,7 +15,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
 import javax.annotation.Nonnull;
@@ -29,33 +30,39 @@ public class WoodDrawerTile extends ControllableDrawerTile {
 
     private static final HashMap<UUID, Long> INTERACTION_LOGGER = new HashMap<>();
 
-    private BigInventoryHandler handler;
-    private DrawerType drawerType;
+    private BigItemHandler handler;
+    private DrawerLayout drawerLayout;
     private DrawerWoodType woodType;
     private int removeTicks = 0;
 
     public WoodDrawerTile() {
-        this(DrawerType.X_1, DrawerWoodType.OAK);
+        this(DrawerLayout.X_1, DrawerWoodType.OAK);
     }
 
-    public WoodDrawerTile(DrawerType drawerType, DrawerWoodType woodType) {
+    public WoodDrawerTile(DrawerLayout drawerLayout, DrawerWoodType woodType) {
         super();
-        this.drawerType = drawerType;
+        this.drawerLayout = drawerLayout;
         this.woodType = woodType;
         this.handler = createHandler();
+        bindStorageHandler(this.handler, () -> this.handler.onChange(StorageChange.reset()));
     }
 
-    private BigInventoryHandler createHandler() {
-        return new BigInventoryHandler(drawerType.getSlots()) {
-            @Override
-            public void onChange() {
-                WoodDrawerTile.this.markDirty();
-                WoodDrawerTile.this.sendUpdatePacket();
-            }
+    private static long capacityFor(double multiplier, ItemStack template) {
+        if (Double.isNaN(multiplier) || multiplier <= 0D) {
+            return 0L;
+        }
+        double capacity = multiplier * Math.max(0, template.getMaxStackSize());
+        if (Double.isInfinite(capacity) || capacity >= Long.MAX_VALUE) {
+            return Long.MAX_VALUE;
+        }
+        return (long) Math.floor(capacity);
+    }
 
+    private BigItemHandler createHandler() {
+        return new BigItemHandler(drawerLayout.getSlotCount()) {
             @Override
-            public float getMultiplier() {
-                return WoodDrawerTile.this.getStorageMultiplier(WoodDrawerTile.this.drawerType.getSlotAmount());
+            public double getMultiplier() {
+                return WoodDrawerTile.this.getStorageMultiplier(WoodDrawerTile.this.drawerLayout.getBaseCapacity());
             }
 
             @Override
@@ -69,8 +76,8 @@ public class WoodDrawerTile extends ControllableDrawerTile {
             }
 
             @Override
-            public boolean isVoid() {
-                return WoodDrawerTile.this.isVoid();
+            public boolean voidsOverflow() {
+                return WoodDrawerTile.this.voidsOverflow();
             }
 
             @Override
@@ -94,8 +101,7 @@ public class WoodDrawerTile extends ControllableDrawerTile {
     }
 
     @Override
-    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing,
-                                   float hitX, float hitY, float hitZ, int slot) {
+    public boolean onSlotActivated(EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ, int slot) {
         ItemStack heldStack = player.getHeldItem(hand);
 
         // Let parent handle upgrades and tools
@@ -105,32 +111,27 @@ public class WoodDrawerTile extends ControllableDrawerTile {
 
         if (slot != -1 && !world.isRemote) {
             // Set the type filter if empty slot and holding item
-            if (!heldStack.isEmpty() && slot < handler.getSlotCount()) {
-                BigInventoryHandler.BigStack bigStack = handler.getStoredStacks().get(slot);
-                if (bigStack.getStack().isEmpty()) {
-                    ItemStack template = heldStack.copy();
-                    template.setCount(heldStack.getMaxStackSize());
-                    bigStack.setStack(template);
-                }
+            if (!heldStack.isEmpty() && isLocked() && slot < handler.getStorageCount() && !handler.getSnapshot(slot).hasTemplate()) {
+                handler.setSlotFilter(slot, heldStack);
             }
 
             // Try to insert held item
             if (!heldStack.isEmpty()) {
-                ItemStack result = handler.insertItem(slot, heldStack, true);
+                ItemStack result = insertIntoPhysicalSlot(slot, heldStack, true);
                 if (result.getCount() != heldStack.getCount()) {
-                    player.setHeldItem(hand, handler.insertItem(slot, heldStack, false));
+                    player.setHeldItem(hand, insertIntoPhysicalSlot(slot, heldStack, false));
                     return true;
                 }
             }
 
             // Double-click fast insert from inventory
-            if (System.currentTimeMillis() - INTERACTION_LOGGER.getOrDefault(player.getUniqueID(), System.currentTimeMillis()) < 300 && (isLocked() || !handler.getStackInSlot(slot).isEmpty())) {
+            if (System.currentTimeMillis() - INTERACTION_LOGGER.getOrDefault(player.getUniqueID(), System.currentTimeMillis()) < 300 && (isLocked() || handler.getSnapshot(slot).hasTemplate())) {
                 for (int i = 0; i < player.inventory.getSizeInventory(); i++) {
                     ItemStack invStack = player.inventory.getStackInSlot(i);
                     if (!invStack.isEmpty()) {
-                        ItemStack testResult = handler.insertItem(slot, invStack, true);
+                        ItemStack testResult = insertIntoPhysicalSlot(slot, invStack, true);
                         if (testResult.getCount() != invStack.getCount()) {
-                            ItemStack leftover = handler.insertItem(slot, invStack.copy(), false);
+                            ItemStack leftover = insertIntoPhysicalSlot(slot, invStack.copy(), false);
                             player.inventory.setInventorySlotContents(i, leftover);
                         }
                     }
@@ -140,70 +141,100 @@ public class WoodDrawerTile extends ControllableDrawerTile {
             INTERACTION_LOGGER.put(player.getUniqueID(), System.currentTimeMillis());
         }
 
-        return true;
+        return false;
     }
 
     @Override
     public void onClicked(EntityPlayer player, int slot) {
         if (!world.isRemote && slot != -1 && removeTicks == 0) {
             removeTicks = 3;
-            int amount = player.isSneaking() ? handler.getStackInSlot(slot).getMaxStackSize() : 1;
-            ItemStack extracted = handler.extractItem(slot, amount, false);
+            BigItemStack snapshot = handler.getSnapshot(slot);
+            int amount = player.isSneaking() && snapshot.hasTemplate() ? snapshot.getTemplate().getMaxStackSize() : 1;
+            ItemStack extracted = extractFromPhysicalSlot(slot, amount, false);
             if (!extracted.isEmpty()) {
                 ItemHandlerHelper.giveItemToPlayer(player, extracted);
             }
         }
     }
 
+    private ItemStack insertIntoPhysicalSlot(int slot, ItemStack stack, boolean simulate) {
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        BigItemStack request = new BigItemStack(stack, stack.getCount());
+        TransferResult<BigItemStack, ItemStorageKey> result = handler.insert(slot, request, StorageAction.fromSimulation(simulate));
+        long remaining = result.getRemainingAmount();
+        if (remaining <= 0L) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack remainder = stack.copy();
+        remainder.setCount((int) Math.min(remaining, stack.getCount()));
+        return remainder;
+    }
+
+    private ItemStack extractFromPhysicalSlot(int slot, int amount, boolean simulate) {
+        BigItemStack snapshot = handler.getSnapshot(slot);
+        if (!snapshot.hasTemplate() || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+        int requested = Math.min(amount, snapshot.getTemplate().getMaxStackSize());
+        TransferResult<BigItemStack, ItemStorageKey> result = handler.extract(slot, requested, StorageAction.fromSimulation(simulate));
+        return result.getProcessed().isEmpty() ? ItemStack.EMPTY : result.getProcessed().toItemStack();
+    }
+
     @Override
     protected void writeCustomData(NBTTagCompound nbt) {
-        nbt.setTag("Inventory", handler.serializeNBT());
-        nbt.setInteger("DrawerType", drawerType.ordinal());
-        nbt.setInteger("WoodType", woodType.ordinal());
+        writeStorage(nbt);
+        nbt.setString("DrawerLayout", drawerLayout.getId());
+        nbt.setString("DrawerWood", woodType.getId());
     }
 
     @Override
     protected void readCustomData(NBTTagCompound nbt) {
-        if (nbt.hasKey("DrawerType")) {
-            drawerType = DrawerType.values()[nbt.getInteger("DrawerType")];
+        if (nbt.hasKey("DrawerLayout")) {
+            drawerLayout = DrawerLayout.fromId(nbt.getString("DrawerLayout"));
         }
-        if (nbt.hasKey("WoodType")) {
-            woodType = DrawerWoodType.values()[nbt.getInteger("WoodType")];
+        if (nbt.hasKey("DrawerWood")) {
+            woodType = DrawerWoodType.fromId(nbt.getString("DrawerWood"));
         }
         handler = createHandler();
-        if (nbt.hasKey("Inventory")) {
-            handler.deserializeNBT(nbt.getCompoundTag("Inventory"));
-        }
+        handler.deserializeNBT(nbt);
+        finishStorageRead(handler, () -> handler.onChange(StorageChange.reset()));
     }
 
     @Nonnull
     @Override
     public NBTTagCompound writeToNBT(@Nonnull NBTTagCompound compound) {
         compound = super.writeToNBT(compound);
-        compound.setTag("Inventory", handler.serializeNBT());
-        compound.setInteger("DrawerType", drawerType.ordinal());
-        compound.setInteger("WoodType", woodType.ordinal());
+        writeStorage(compound);
+        compound.setString("DrawerLayout", drawerLayout.getId());
+        compound.setString("DrawerWood", woodType.getId());
         return compound;
     }
 
     @Override
     public void readFromNBT(@Nonnull NBTTagCompound compound) {
-        if (compound.hasKey("DrawerType")) {
-            drawerType = DrawerType.values()[compound.getInteger("DrawerType")];
+        beginStorageRead();
+        if (compound.hasKey("DrawerLayout")) {
+            drawerLayout = DrawerLayout.fromId(compound.getString("DrawerLayout"));
         }
-        if (compound.hasKey("WoodType")) {
-            woodType = DrawerWoodType.values()[compound.getInteger("WoodType")];
+        if (compound.hasKey("DrawerWood")) {
+            woodType = DrawerWoodType.fromId(compound.getString("DrawerWood"));
         }
-        handler = createHandler();
         super.readFromNBT(compound);
-        if (compound.hasKey("Inventory")) {
-            handler.deserializeNBT(compound.getCompoundTag("Inventory"));
-        }
+        handler = createHandler();
+        handler.deserializeNBT(compound);
+        finishStorageRead(handler, () -> handler.onChange(StorageChange.reset()));
     }
 
     @Override
-    public IItemHandler getItemHandler() {
+    public IBigItemHandler getItemHandler() {
         return handler;
+    }
+
+    @Override
+    protected void onLockStateChanged(boolean locked) {
+        handler.applyLockConfiguration(locked);
     }
 
     @Override
@@ -224,54 +255,62 @@ public class WoodDrawerTile extends ControllableDrawerTile {
     @Override
     public boolean isEverythingEmpty() {
         if (!super.isEverythingEmpty()) return false;
-        for (int i = 0; i < handler.getSlotCount(); i++) {
-            BigInventoryHandler.BigStack bs = handler.getStoredStacks().get(i);
-            if (!bs.getStack().isEmpty() || bs.getAmount() > 0) return false;
+        for (int i = 0; i < handler.getStorageCount(); i++) {
+            BigItemStack snapshot = handler.getSnapshot(i);
+            if (snapshot.hasTemplate()) return false;
         }
         return true;
     }
 
     @Override
     protected int calculateRedstoneSignal() {
-        long totalCapacity = 0;
-        long totalStored = 0;
-        for (int i = 0; i < handler.getSlotCount(); i++) {
-            totalCapacity += handler.getLongSlotLimit(i);
-            totalStored += handler.getStoredStacks().get(i).getAmount();
+        int active = 0;
+        double fillRatio = 0D;
+
+        for (int i = 0; i < handler.getStorageCount(); i++) {
+            active++;
+            long capacity = handler.getCapacity(i);
+            if (capacity <= 0L)
+                continue;
+
+            BigItemStack snapshot = handler.getSnapshot(i);
+            double slotRatio = snapshot.getAmount() >= capacity
+                    ? 1D
+                    : (double) snapshot.getAmount() / (double) capacity;
+            fillRatio += slotRatio;
         }
-        if (totalCapacity == 0) return 0;
-        return (int) ((totalStored / (double) totalCapacity) * 15);
+
+        if (active == 0)
+            return 0;
+
+        return calculateRedstoneSignalForRatio(fillRatio / active);
     }
 
     @Override
     protected boolean canApplyUpgradeState(UpgradeState state) {
-        if (state.creative || state.maxStorage) {
+        if (state.hasFeature(StorageFeature.CREATIVE) || state.hasFeature(StorageFeature.MAX_CAPACITY)) {
             return true;
         }
-        float calculated = state.calculate(ModifierType.ITEM_STORAGE, drawerType.getSlotAmount());
-        for (int i = 0; i < handler.getSlotCount(); i++) {
-            BigInventoryHandler.BigStack bigStack = handler.getStoredStacks().get(i);
-            if (bigStack.getAmount() <= 0) {
+        double calculated = state.calculate(UpgradeAttribute.ITEM_CAPACITY, drawerLayout.getBaseCapacity());
+        for (int i = 0; i < handler.getStorageCount(); i++) {
+            BigItemStack snapshot = handler.getSnapshot(i);
+            if (snapshot.getAmount() <= 0L) {
                 continue;
             }
-            double stackSize = 1.0d;
-            if (!bigStack.getStack().isEmpty()) {
-                stackSize = bigStack.getStack().getMaxStackSize() / 64D;
-            }
-            long capacity = (long) Math.floor(64D * calculated * stackSize);
-            if (bigStack.getAmount() > capacity) {
+            long capacity = capacityFor(calculated, snapshot.getTemplate());
+            if (snapshot.getAmount() > capacity) {
                 return false;
             }
         }
         return true;
     }
 
-    public BigInventoryHandler getHandler() {
-        return handler;
+    private void writeStorage(NBTTagCompound nbt) {
+        nbt.setTag("StorageV2", handler.serializeNBT().getCompoundTag("StorageV2"));
     }
 
-    public DrawerType getDrawerType() {
-        return drawerType;
+    public DrawerLayout getDrawerLayout() {
+        return drawerLayout;
     }
 
     public DrawerWoodType getWoodType() {

@@ -1,6 +1,7 @@
 package com.xinyihl.functionalstoragelegacy.client.gui;
 
-import com.xinyihl.functionalstoragelegacy.common.inventory.base.BigFluidHandler;
+import com.xinyihl.functionalstoragelegacy.api.storage.BigFluidStack;
+import com.xinyihl.functionalstoragelegacy.api.storage.IBigFluidHandler;
 import com.xinyihl.functionalstoragelegacy.util.NumberUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
@@ -33,13 +34,10 @@ public class FluidDrawerInfoGuiAddon {
     private final ResourceLocation gui;
     private final int slotAmount;
     private final Function<Integer, Pair<Integer, Integer>> slotPosition;
-    private final Supplier<BigFluidHandler> fluidHandlerSupplier;
+    private final Supplier<IBigFluidHandler> fluidHandlerSupplier;
     private final Function<Integer, Long> slotMaxAmount;
 
-    public FluidDrawerInfoGuiAddon(int posX, int posY, ResourceLocation gui, int slotAmount,
-                                   Function<Integer, Pair<Integer, Integer>> slotPosition,
-                                   Supplier<BigFluidHandler> fluidHandlerSupplier,
-                                   Function<Integer, Long> slotMaxAmount) {
+    public FluidDrawerInfoGuiAddon(int posX, int posY, ResourceLocation gui, int slotAmount, Function<Integer, Pair<Integer, Integer>> slotPosition, Supplier<IBigFluidHandler> fluidHandlerSupplier, Function<Integer, Long> slotMaxAmount) {
         this.posX = posX;
         this.posY = posY;
         this.gui = gui;
@@ -89,6 +87,10 @@ public class FluidDrawerInfoGuiAddon {
         return new int[]{0, 0, 0, 0};
     }
 
+    private static String formatAmount(long amount, boolean exact) {
+        return (exact ? Long.toString(amount) : NumberUtils.formatCompact(amount)) + "B";
+    }
+
     /**
      * Draw the background panel with fluid rendering and amount text.
      */
@@ -97,15 +99,9 @@ public class FluidDrawerInfoGuiAddon {
 
         // Render fluids behind the background overlay
         for (int i = 0; i < slotAmount; i++) {
-            FluidStack fluidStack = fluidHandlerSupplier.get().getTankFluid(i);
-            if (fluidStack == null && fluidHandlerSupplier.get().isLocked()) {
-                BigFluidHandler.CustomFluidTank tank = fluidHandlerSupplier.get().getTanks().get(i);
-                fluidStack = tank.getLockedFluid();
-            }
-            if (fluidStack != null && fluidStack.amount > 0) {
-                renderFluid(mc, guiX, guiY, fluidStack, i, slotAmount);
-            } else if (fluidStack != null) {
-                // Locked but empty - show locked fluid icon
+            BigFluidStack snapshot = safeSnapshot(i);
+            FluidStack fluidStack = snapshot.getTemplate();
+            if (fluidStack != null) {
                 renderFluid(mc, guiX, guiY, fluidStack, i, slotAmount);
             }
         }
@@ -119,22 +115,54 @@ public class FluidDrawerInfoGuiAddon {
 
         // Draw amount text
         for (int i = 0; i < slotAmount; i++) {
-            FluidStack fluidStack = fluidHandlerSupplier.get().getTankFluid(i);
-            if (fluidStack != null && fluidStack.amount > 0) {
+            BigFluidStack snapshot = safeSnapshot(i);
+            if (snapshot.hasTemplate()) {
                 int x = guiX + slotPosition.apply(i).getLeft() + posX;
                 int y = guiY + slotPosition.apply(i).getRight() + posY;
-                String amount = NumberUtils.formatCompactFluid(fluidStack.amount)
-                        + "/" + NumberUtils.formatCompactFluid(slotMaxAmount.apply(i));
+                String amount = NumberUtils.formatCompactFluid(snapshot.getAmount());
                 float scale = 1f;
                 GlStateManager.pushMatrix();
                 GlStateManager.translate(0, 0, 200);
                 GlStateManager.scale(scale, scale, scale);
-                int textX = (int) ((x + 17 - mc.fontRenderer.getStringWidth(amount) / 2F) * (1 / scale));
+                int textX = (int) ((x + 17 - mc.fontRenderer.getStringWidth(amount)) * (1 / scale));
                 int textY = (int) ((y + 12) * (1 / scale));
                 mc.fontRenderer.drawStringWithShadow(amount, textX, textY, 0xFFFFFF);
                 GlStateManager.popMatrix();
             }
         }
+    }
+
+    private void renderFluid(Minecraft mc, int guiX, int guiY, FluidStack fluidStack, int slot, int slotAmount) {
+        Fluid fluid = fluidStack.getFluid();
+        if (fluid == null) return;
+        ResourceLocation still = fluid.getStill(fluidStack);
+        if (still == null) return;
+
+        TextureAtlasSprite sprite = mc.getTextureMapBlocks().getAtlasSprite(still.toString());
+
+        int color = fluid.getColor(fluidStack);
+        float r = ((color >> 16) & 0xFF) / 255f;
+        float g = ((color >> 8) & 0xFF) / 255f;
+        float b = (color & 0xFF) / 255f;
+        float a = ((color >> 24) & 0xFF) / 255f;
+        if (a == 0) a = 1f;
+
+        int[] rect = getSizeForSlots(slot, slotAmount);
+
+        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+        GlStateManager.color(r, g, b, a);
+        GlStateManager.enableBlend();
+
+        for (int x = 0; x < rect[2]; x += 16) {
+            for (int y = 0; y < rect[3]; y += 16) {
+                int drawWidth = Math.min(16, rect[2] - x);
+                int drawHeight = Math.min(16, rect[3] - y);
+                drawTexturedRect(posX + guiX + rect[0] + x, posY + guiY + rect[1] + y, drawWidth, drawHeight, sprite);
+            }
+        }
+
+        GlStateManager.disableBlend();
+        GlStateManager.color(1, 1, 1, 1);
     }
 
     /**
@@ -158,67 +186,29 @@ public class FluidDrawerInfoGuiAddon {
                 GlStateManager.enableDepth();
 
                 List<String> tooltip = new ArrayList<>();
-                FluidStack over = fluidHandlerSupplier.get().getTankFluid(i);
-                if (over == null && fluidHandlerSupplier.get().isLocked()) {
-                    BigFluidHandler.CustomFluidTank tank = fluidHandlerSupplier.get().getTanks().get(i);
-                    over = tank.getLockedFluid();
-                }
-                if (over == null || over.amount <= 0) {
-                    tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.fluid")
-                            + "§f" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.empty"));
+                BigFluidStack snapshot = safeSnapshot(i);
+                FluidStack over = snapshot.getTemplate();
+                if (over == null) {
+                    tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.fluid") + "§f" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.empty"));
                 } else {
-                    tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.fluid")
-                            + "§f" + over.getLocalizedName());
-                    FluidStack actual = fluidHandlerSupplier.get().getTankFluid(i);
-                    int actualAmount = actual != null ? actual.amount : 0;
-                    String amountStr = NumberUtils.formatCompactFluid(actualAmount)
-                            + "/" + NumberUtils.formatCompactFluid(slotMaxAmount.apply(i));
-                    tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.amount")
-                            + "§f" + amountStr);
+                    tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.fluid") + "§f" + over.getLocalizedName());
+                    boolean exact = GuiScreen.isShiftKeyDown();
+                    String amountStr = formatAmount(snapshot.getAmount(), exact) + "/" + formatAmount(slotMaxAmount.apply(i), exact);
+                    tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.amount") + "§f" + amountStr);
                 }
-                tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.slot")
-                        + "§f" + i);
+                tooltip.add("§6" + net.minecraft.client.resources.I18n.format("gui.functionalstoragelegacy.slot") + "§f" + i);
 
                 screen.drawHoveringText(tooltip, mouseX - guiX, mouseY - guiY);
             }
         }
     }
 
-    private void renderFluid(Minecraft mc, int guiX, int guiY, FluidStack fluidStack, int slot, int slotAmount) {
-        Fluid fluid = fluidStack.getFluid();
-        if (fluid == null) return;
-        ResourceLocation still = fluid.getStill(fluidStack);
-        if (still == null) return;
-
-        TextureAtlasSprite sprite = mc.getTextureMapBlocks().getAtlasSprite(still.toString());
-        if (sprite == null) return;
-
-        int color = fluid.getColor(fluidStack);
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-        float a = ((color >> 24) & 0xFF) / 255f;
-        if (a == 0) a = 1f;
-
-        int[] rect = getSizeForSlots(slot, slotAmount);
-
-        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-        GlStateManager.color(r, g, b, a);
-        GlStateManager.enableBlend();
-
-        for (int x = 0; x < rect[2]; x += 16) {
-            for (int y = 0; y < rect[3]; y += 16) {
-                int drawWidth = Math.min(16, rect[2] - x);
-                int drawHeight = Math.min(16, rect[3] - y);
-                drawTexturedRect(
-                        posX + guiX + rect[0] + x,
-                        posY + guiY + rect[1] + y,
-                        drawWidth, drawHeight, sprite);
-            }
+    private BigFluidStack safeSnapshot(int tank) {
+        IBigFluidHandler handler = fluidHandlerSupplier.get();
+        if (handler == null || tank < 0 || tank >= handler.getStorageCount()) {
+            return BigFluidStack.empty();
         }
-
-        GlStateManager.disableBlend();
-        GlStateManager.color(1, 1, 1, 1);
+        return handler.getSnapshot(tank);
     }
 
     private void drawTexturedRect(int x, int y, int width, int height, TextureAtlasSprite sprite) {

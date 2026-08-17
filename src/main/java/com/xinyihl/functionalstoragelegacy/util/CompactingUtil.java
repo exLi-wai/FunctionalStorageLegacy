@@ -3,12 +3,16 @@ package com.xinyihl.functionalstoragelegacy.util;
 import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.compact.SimpleCompactingDrawerTile;
+import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.CraftingManager;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
 
@@ -33,19 +37,18 @@ public class CompactingUtil {
      * @param clickedSlot The slot index that was clicked (0-based)
      * @return List of compacting tiers
      */
-    public static List<CompactingInventoryHandler.Result> getCompactingResults(World world, ItemStack stack, int maxSlots, int clickedSlot) {
-        List<CompactingInventoryHandler.Result> fallback = getCompactingResults(world, stack, maxSlots);
+    public static List<CompactingInventoryHandler.Tier> getCompactingResults(World world, ItemStack stack, int maxSlots, int clickedSlot) {
+        List<CompactingInventoryHandler.Tier> fallback = getCompactingResults(world, stack, maxSlots);
         if (clickedSlot < 0 || clickedSlot >= maxSlots || stack.isEmpty()) {
             return fallback;
         }
 
-        int maxHigher = clickedSlot;
         int maxLower = maxSlots - clickedSlot - 1;
 
         List<HigherTier> higherTiers = new ArrayList<>();
         ItemStack searching = stack.copy();
         searching.setCount(1);
-        for (int i = 0; i < maxHigher; i++) {
+        for (int i = 0; i < clickedSlot; i++) {
             HigherTier higher = findHigherTier(world, searching);
             if (higher == null) {
                 break;
@@ -66,32 +69,32 @@ public class CompactingUtil {
             searching = lower.result.copy();
         }
 
-        List<CompactingInventoryHandler.Result> anchored = new ArrayList<>();
+        List<CompactingInventoryHandler.Tier> anchored = new ArrayList<>();
         for (int i = 0; i < maxSlots; i++) {
-            anchored.add(new CompactingInventoryHandler.Result(ItemStack.EMPTY, 1));
+            anchored.add(CompactingInventoryHandler.Tier.empty());
         }
 
-        int clickedNeeded = 1;
+        long clickedNeeded = 1L;
         for (LowerTier lower : lowerTiers) {
-            clickedNeeded *= lower.count;
+            clickedNeeded = saturatedMultiply(clickedNeeded, lower.count);
         }
 
         ItemStack clickedStack = stack.copy();
         clickedStack.setCount(1);
-        anchored.set(clickedSlot, new CompactingInventoryHandler.Result(clickedStack, clickedNeeded));
+        anchored.set(clickedSlot, new CompactingInventoryHandler.Tier(clickedStack, clickedNeeded));
 
-        int higherNeeded = clickedNeeded;
+        long higherNeeded = clickedNeeded;
         for (int i = 0; i < higherTiers.size(); i++) {
             HigherTier higher = higherTiers.get(i);
-            higherNeeded *= higher.inputCount;
+            higherNeeded = saturatedMultiply(higherNeeded, higher.inputCount);
             int targetSlot = clickedSlot - 1 - i;
             if (targetSlot < 0) {
                 break;
             }
-            anchored.set(targetSlot, new CompactingInventoryHandler.Result(higher.result.copy(), higherNeeded));
+            anchored.set(targetSlot, new CompactingInventoryHandler.Tier(higher.result.copy(), higherNeeded));
         }
 
-        int lowerNeeded = clickedNeeded;
+        long lowerNeeded = clickedNeeded;
         for (int i = 0; i < lowerTiers.size(); i++) {
             LowerTier lower = lowerTiers.get(i);
             lowerNeeded /= lower.count;
@@ -99,7 +102,7 @@ public class CompactingUtil {
             if (targetSlot >= maxSlots) {
                 break;
             }
-            anchored.set(targetSlot, new CompactingInventoryHandler.Result(lower.result.copy(), lowerNeeded));
+            anchored.set(targetSlot, new CompactingInventoryHandler.Tier(lower.result.copy(), lowerNeeded));
         }
 
         return anchored;
@@ -110,8 +113,8 @@ public class CompactingUtil {
      * Find compacting results for a given item.
      * Returns a list of Result from highest tier to lowest tier (base item last).
      */
-    private static List<CompactingInventoryHandler.Result> getCompactingResults(World world, ItemStack stack, int maxSlots) {
-        List<CompactingInventoryHandler.Result> results = new ArrayList<>();
+    private static List<CompactingInventoryHandler.Tier> getCompactingResults(World world, ItemStack stack, int maxSlots) {
+        List<CompactingInventoryHandler.Tier> results = new ArrayList<>();
 
         // Start with the given item
         ItemStack current = stack.copy();
@@ -147,15 +150,15 @@ public class CompactingUtil {
             // Build results from input (highest) down to lowest tier
             // needed = how many base (lowest tier) items equal one of this item
             // e.g., [Block(81), Ingot(9), Nugget(1)]
-            int totalProduct = 1;
+            long totalProduct = 1L;
             for (LowerTier lt : lowerTiers) {
-                totalProduct *= lt.count;
+                totalProduct = saturatedMultiply(totalProduct, lt.count);
             }
-            results.add(new CompactingInventoryHandler.Result(current, totalProduct));
-            int divisor = 1;
+            results.add(new CompactingInventoryHandler.Tier(current, totalProduct));
+            long divisor = 1L;
             for (LowerTier lt : lowerTiers) {
-                divisor *= lt.count;
-                results.add(new CompactingInventoryHandler.Result(lt.result, totalProduct / divisor));
+                divisor = saturatedMultiply(divisor, lt.count);
+                results.add(new CompactingInventoryHandler.Tier(lt.result, Math.max(1L, totalProduct / divisor)));
             }
         } else {
             // Build results from highest tier down to input
@@ -170,31 +173,32 @@ public class CompactingUtil {
             }
 
             // Calculate needed from bottom (input) up
-            int[] neededArr = new int[chain.size()];
-            neededArr[0] = 1;
+            long[] neededArr = new long[chain.size()];
+            neededArr[0] = 1L;
             for (int i = 1; i < chain.size(); i++) {
-                neededArr[i] = neededArr[i - 1] * counts.get(i - 1);
+                neededArr[i] = saturatedMultiply(neededArr[i - 1], counts.get(i - 1));
             }
 
             // Add results from highest to lowest: [highest(biggest needed), ..., input(1)]
             for (int i = chain.size() - 1; i >= 0; i--) {
-                results.add(new CompactingInventoryHandler.Result(chain.get(i), neededArr[i]));
+                results.add(new CompactingInventoryHandler.Tier(chain.get(i), neededArr[i]));
             }
 
             // Try to extend downward from input
             if (results.size() < maxSlots) {
                 LowerTier lower = findLowerTier(world, current);
                 if (lower != null) {
-                    for (CompactingInventoryHandler.Result r : results) {
-                        r.setNeeded(r.getNeeded() * lower.count);
+                    for (int i = 0; i < results.size(); i++) {
+                        CompactingInventoryHandler.Tier tier = results.get(i);
+                        results.set(i, new CompactingInventoryHandler.Tier(tier.getTemplate(), saturatedMultiply(tier.getBaseUnits(), lower.count)));
                     }
-                    results.add(new CompactingInventoryHandler.Result(lower.result, 1));
+                    results.add(new CompactingInventoryHandler.Tier(lower.result, 1L));
                 }
             }
         }
 
         while (results.size() < maxSlots) {
-            results.add(new CompactingInventoryHandler.Result(ItemStack.EMPTY, 1));
+            results.add(CompactingInventoryHandler.Tier.empty());
         }
         if (results.size() > maxSlots) {
             results = results.subList(0, maxSlots);
@@ -204,12 +208,16 @@ public class CompactingUtil {
     }
 
     private static HigherTier findHigherTier(World world, ItemStack input) {
+        HigherTier configured = findConfiguredHigherTier(input);
+        if (configured != null) return configured;
         HigherTier result = tryCompact(world, input, 3);
         if (result != null) return result;
         return tryCompact(world, input, 2);
     }
 
     private static LowerTier findLowerTier(World world, ItemStack input) {
+        LowerTier configured = findConfiguredLowerTier(input);
+        if (configured != null) return configured;
         FakeContainer container = new FakeContainer(1);
         container.setInventorySlotContents(0, input.copy());
         IRecipe recipe = CraftingManager.findMatchingRecipe(container, world);
@@ -220,6 +228,77 @@ public class CompactingUtil {
             }
         }
         return null;
+    }
+
+    private static HigherTier findConfiguredHigherTier(ItemStack input) {
+        for (ConfiguredRule rule : getConfiguredRules()) {
+            if (ItemUtil.areItemStacksEqual(rule.lower, input)) {
+                return new HigherTier(rule.higher, rule.ratio);
+            }
+        }
+        return null;
+    }
+
+    private static LowerTier findConfiguredLowerTier(ItemStack input) {
+        for (ConfiguredRule rule : getConfiguredRules()) {
+            if (ItemUtil.areItemStacksEqual(rule.higher, input)) {
+                return new LowerTier(rule.lower, rule.ratio);
+            }
+        }
+        return null;
+    }
+
+    private static List<ConfiguredRule> getConfiguredRules() {
+        List<ConfiguredRule> rules = new ArrayList<>();
+        if (!Configurations.GENERAL.registerExtraCompactingRules
+                || Configurations.GENERAL.extraCompactingRules == null) {
+            return rules;
+        }
+        for (String configured : Configurations.GENERAL.extraCompactingRules) {
+            ConfiguredRule rule = parseConfiguredRule(configured);
+            if (rule != null) {
+                rules.add(rule);
+            }
+        }
+        return rules;
+    }
+
+    private static ConfiguredRule parseConfiguredRule(String configured) {
+        if (configured == null) return null;
+        String[] parts = configured.split(",");
+        if (parts.length != 3) return null;
+        ItemStack higher = parseConfiguredStack(parts[0].trim());
+        ItemStack lower = parseConfiguredStack(parts[1].trim());
+        if (higher.isEmpty() || lower.isEmpty() || ItemUtil.areItemStacksEqual(higher, lower)) return null;
+        try {
+            int ratio = Integer.parseInt(parts[2].trim());
+            return ratio >= 2 ? new ConfiguredRule(higher, lower, ratio) : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static ItemStack parseConfiguredStack(String configured) {
+        if (configured.isEmpty()) return ItemStack.EMPTY;
+        String itemName = configured;
+        int metadata = 0;
+        int lastColon = configured.lastIndexOf(':');
+        if (lastColon > 0) {
+            String possibleMetadata = configured.substring(lastColon + 1);
+            try {
+                metadata = Integer.parseInt(possibleMetadata);
+                if (metadata < 0) return ItemStack.EMPTY;
+                itemName = configured.substring(0, lastColon);
+            } catch (NumberFormatException ignored) {
+                // The final segment is the item path, not metadata.
+            }
+        }
+        try {
+            Item item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName));
+            return item == null ? ItemStack.EMPTY : new ItemStack(item, 1, metadata);
+        } catch (RuntimeException ignored) {
+            return ItemStack.EMPTY;
+        }
     }
 
     private static HigherTier tryCompact(World world, ItemStack input, int gridSize) {
@@ -256,26 +335,28 @@ public class CompactingUtil {
     }
 
     public static boolean CompressionDrawertrEatment(ControllableDrawerTile tile, ItemStack itemToGenerate, CompactingInventoryHandler compactingHandler) {
-        int anchorSlot = compactingHandler.getSlots() - 1;
-        List<CompactingInventoryHandler.Result> results = CompactingUtil.getCompactingResults(
-                tile.getWorld(),
-                itemToGenerate,
-                compactingHandler.getSlots(),
-                anchorSlot
-        );
+        int anchorSlot = compactingHandler.getStorageCount() - 1;
+        List<CompactingInventoryHandler.Tier> results = CompactingUtil.getCompactingResults(tile.getWorld(), itemToGenerate, compactingHandler.getStorageCount(), anchorSlot);
 
         if (!results.isEmpty()) {
-            while (results.size() < compactingHandler.getSlots()) {
-                results.add(new CompactingInventoryHandler.Result(ItemStack.EMPTY, 1));
+            while (results.size() < compactingHandler.getStorageCount()) {
+                results.add(CompactingInventoryHandler.Tier.empty());
             }
-            if (results.size() > compactingHandler.getSlots()) {
-                results = results.subList(0, compactingHandler.getSlots());
+            if (results.size() > compactingHandler.getStorageCount()) {
+                results = results.subList(0, compactingHandler.getStorageCount());
             }
-            compactingHandler.setResults(results);
+            compactingHandler.configureTiers(results);
         } else {
             return true;
         }
         return false;
+    }
+
+    private static long saturatedMultiply(long value, int factor) {
+        if (value <= 0L || factor <= 0) {
+            return 0L;
+        }
+        return value > Long.MAX_VALUE / factor ? Long.MAX_VALUE : value * factor;
     }
 
     private static class HigherTier {
@@ -297,6 +378,18 @@ public class CompactingUtil {
             this.result = result.copy();
             this.result.setCount(1);
             this.count = count;
+        }
+    }
+
+    private static class ConfiguredRule {
+        final ItemStack higher;
+        final ItemStack lower;
+        final int ratio;
+
+        ConfiguredRule(ItemStack higher, ItemStack lower, int ratio) {
+            this.higher = higher.copy();
+            this.lower = lower.copy();
+            this.ratio = ratio;
         }
     }
 

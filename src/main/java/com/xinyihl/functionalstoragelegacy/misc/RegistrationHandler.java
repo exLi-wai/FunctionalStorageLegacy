@@ -1,12 +1,8 @@
 package com.xinyihl.functionalstoragelegacy.misc;
 
 import com.xinyihl.functionalstoragelegacy.Tags;
-import com.xinyihl.functionalstoragelegacy.api.DrawerType;
-import com.xinyihl.functionalstoragelegacy.api.DrawerWoodType;
-import com.xinyihl.functionalstoragelegacy.common.block.ArmoryCabinetBlock;
-import com.xinyihl.functionalstoragelegacy.common.block.EnderDrawerBlock;
-import com.xinyihl.functionalstoragelegacy.common.block.FluidDrawerBlock;
-import com.xinyihl.functionalstoragelegacy.common.block.WoodDrawerBlock;
+import com.xinyihl.functionalstoragelegacy.api.upgrade.StorageFeature;
+import com.xinyihl.functionalstoragelegacy.common.block.*;
 import com.xinyihl.functionalstoragelegacy.common.block.base.DrawerBlock;
 import com.xinyihl.functionalstoragelegacy.common.block.compact.CompactingDrawerBlock;
 import com.xinyihl.functionalstoragelegacy.common.block.compact.SimpleCompactingDrawerBlock;
@@ -17,6 +13,7 @@ import com.xinyihl.functionalstoragelegacy.common.item.DrawerItemBlock;
 import com.xinyihl.functionalstoragelegacy.common.item.LinkingToolItem;
 import com.xinyihl.functionalstoragelegacy.common.item.upgrade.*;
 import com.xinyihl.functionalstoragelegacy.common.recipe.FunctionalStorageRecipes;
+import com.xinyihl.functionalstoragelegacy.common.storage.DrawerLayout;
 import com.xinyihl.functionalstoragelegacy.common.tile.EnderDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.FluidDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.WoodDrawerTile;
@@ -51,6 +48,7 @@ public class RegistrationHandler {
     // ====== Blocks ======
     // Wood drawers
     public static final List<WoodDrawerBlock> WOOD_DRAWER_BLOCKS = new ArrayList<>();
+    public static final List<FramedDrawerBlock> FRAMED_DRAWER_BLOCKS = new ArrayList<>();
     public static DrawerControllerBlock DRAWER_CONTROLLER_BLOCK;
     // ====== Creative Tab ======
     public static final CreativeTabs CREATIVE_TAB = new CreativeTabs(Tags.MOD_ID) {
@@ -107,11 +105,17 @@ public class RegistrationHandler {
     public static void registerBlocks(RegistryEvent.Register<Block> event) {
         // Wood drawers
         for (DrawerWoodType wood : DrawerWoodType.values()) {
-            for (DrawerType type : DrawerType.values()) {
-                WoodDrawerBlock block = new WoodDrawerBlock(wood, type);
+            for (DrawerLayout layout : DrawerLayout.values()) {
+                WoodDrawerBlock block = new WoodDrawerBlock(wood, layout);
                 WOOD_DRAWER_BLOCKS.add(block);
                 event.getRegistry().register(block);
             }
+        }
+
+        for (DrawerLayout layout : DrawerLayout.values()) {
+            FramedDrawerBlock block = new FramedDrawerBlock(layout);
+            FRAMED_DRAWER_BLOCKS.add(block);
+            event.getRegistry().register(block);
         }
 
         // Special blocks
@@ -119,23 +123,13 @@ public class RegistrationHandler {
         CONTROLLER_EXTENSION_BLOCK = new ControllerExtensionBlock();
         COMPACTING_DRAWER_BLOCK = new CompactingDrawerBlock();
         SIMPLE_COMPACTING_DRAWER_BLOCK = new SimpleCompactingDrawerBlock();
-        FLUID_DRAWER_1 = new FluidDrawerBlock(DrawerType.X_1);
-        FLUID_DRAWER_2 = new FluidDrawerBlock(DrawerType.X_2);
-        FLUID_DRAWER_4 = new FluidDrawerBlock(DrawerType.X_4);
+        FLUID_DRAWER_1 = new FluidDrawerBlock(DrawerLayout.X_1);
+        FLUID_DRAWER_2 = new FluidDrawerBlock(DrawerLayout.X_2);
+        FLUID_DRAWER_4 = new FluidDrawerBlock(DrawerLayout.X_4);
         ENDER_DRAWER_BLOCK = new EnderDrawerBlock();
         ARMORY_CABINET_BLOCK = new ArmoryCabinetBlock();
 
-        event.getRegistry().registerAll(
-                DRAWER_CONTROLLER_BLOCK,
-                CONTROLLER_EXTENSION_BLOCK,
-                COMPACTING_DRAWER_BLOCK,
-                SIMPLE_COMPACTING_DRAWER_BLOCK,
-                FLUID_DRAWER_1,
-                FLUID_DRAWER_2,
-                FLUID_DRAWER_4,
-                ENDER_DRAWER_BLOCK,
-                ARMORY_CABINET_BLOCK
-        );
+        event.getRegistry().registerAll(DRAWER_CONTROLLER_BLOCK, CONTROLLER_EXTENSION_BLOCK, COMPACTING_DRAWER_BLOCK, SIMPLE_COMPACTING_DRAWER_BLOCK, FLUID_DRAWER_1, FLUID_DRAWER_2, FLUID_DRAWER_4, ENDER_DRAWER_BLOCK, ARMORY_CABINET_BLOCK);
     }
 
     @SubscribeEvent
@@ -144,17 +138,10 @@ public class RegistrationHandler {
         for (WoodDrawerBlock block : WOOD_DRAWER_BLOCKS) {
             event.getRegistry().register(createItemBlock(block));
         }
-        event.getRegistry().registerAll(
-                createItemBlock(DRAWER_CONTROLLER_BLOCK),
-                createItemBlock(CONTROLLER_EXTENSION_BLOCK),
-                createItemBlock(COMPACTING_DRAWER_BLOCK),
-                createItemBlock(SIMPLE_COMPACTING_DRAWER_BLOCK),
-                createItemBlock(FLUID_DRAWER_1),
-                createItemBlock(FLUID_DRAWER_2),
-                createItemBlock(FLUID_DRAWER_4),
-                createItemBlock(ENDER_DRAWER_BLOCK),
-                createItemBlock(ARMORY_CABINET_BLOCK)
-        );
+        for (FramedDrawerBlock block : FRAMED_DRAWER_BLOCKS) {
+            event.getRegistry().register(createItemBlock(block));
+        }
+        event.getRegistry().registerAll(createItemBlock(DRAWER_CONTROLLER_BLOCK), createItemBlock(CONTROLLER_EXTENSION_BLOCK), createItemBlock(COMPACTING_DRAWER_BLOCK), createItemBlock(SIMPLE_COMPACTING_DRAWER_BLOCK), createItemBlock(FLUID_DRAWER_1), createItemBlock(FLUID_DRAWER_2), createItemBlock(FLUID_DRAWER_4), createItemBlock(ENDER_DRAWER_BLOCK), createItemBlock(ARMORY_CABINET_BLOCK));
 
         // Storage Upgrades
         IRON_DOWNGRADE = new StorageUpgradeItem(StorageUpgradeItem.StorageTier.IRON);
@@ -180,8 +167,9 @@ public class RegistrationHandler {
         MAX_STORAGE_UPGRADE = new StorageUpgradeItem(StorageUpgradeItem.StorageTier.MAX);
         MAX_STORAGE_UPGRADE.setRegistryName("max_storage_upgrade");
         MAX_STORAGE_UPGRADE.setTranslationKey(Tags.MOD_ID + ".max_storage_upgrade");
+        MAX_STORAGE_UPGRADE.incompatibleWith(MAX_STORAGE_UPGRADE);
 
-        CREATIVE_VENDING_UPGRADE = new UpgradeItem(UpgradeItem.Type.STORAGE) {
+        CREATIVE_VENDING_UPGRADE = new UpgradeItem(DrawerUpgradeBehavior.SlotType.STORAGE, StorageFeature.CREATIVE) {
         };
         CREATIVE_VENDING_UPGRADE.setRegistryName("creative_vending_upgrade");
         CREATIVE_VENDING_UPGRADE.setTranslationKey(Tags.MOD_ID + ".creative_vending_upgrade");
@@ -266,7 +254,7 @@ public class RegistrationHandler {
         WATER_GENERATION_UPGRADE_T4.setTranslationKey(Tags.MOD_ID + ".water_generation_upgrade_t4");
         WATER_GENERATION_UPGRADE_T4.insertableInto(FluidDrawerTile.class);
 
-        if(Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED) {
+        if (Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED) {
             UNIVERSAL_ITEM_GENERATION_T1 = new UniversalItemGeneration(UniversalItemGeneration.GenerationTier.T1);
             UNIVERSAL_ITEM_GENERATION_T1.setRegistryName("universal_item_generation_T1");
             UNIVERSAL_ITEM_GENERATION_T1.setTranslationKey(Tags.MOD_ID + ".universal_item_generation_T1");
@@ -297,39 +285,9 @@ public class RegistrationHandler {
         LINKING_TOOL.setRegistryName("linking_tool");
         LINKING_TOOL.setTranslationKey(Tags.MOD_ID + ".linking_tool");
 
-        event.getRegistry().registerAll(
-                IRON_DOWNGRADE,
-                COPPER_UPGRADE,
-                GOLD_UPGRADE,
-                DIAMOND_UPGRADE,
-                NETHERITE_UPGRADE,
-                MAX_STORAGE_UPGRADE,
-                CREATIVE_VENDING_UPGRADE,
-                VOID_UPGRADE,
-                REDSTONE_UPGRADE,
-                PULLING_UPGRADE,
-                PUSHING_UPGRADE,
-                COLLECTOR_UPGRADE,
-                ORE_DICTIONARY_UPGRADE,
-                WIRELESS_PULLING_UPGRADE,
-                WIRELESS_PUSHING_UPGRADE,
-                CONFIGURATION_TOOL,
-                LINKING_TOOL,
-                STONE_GENERATION_UPGRADE_T1,
-                STONE_GENERATION_UPGRADE_T2,
-                STONE_GENERATION_UPGRADE_T3,
-                STONE_GENERATION_UPGRADE_T4,
-                WATER_GENERATION_UPGRADE_T1,
-                WATER_GENERATION_UPGRADE_T2,
-                WATER_GENERATION_UPGRADE_T3,
-                WATER_GENERATION_UPGRADE_T4
-        );
-        if(Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED){
-            event.getRegistry().registerAll(
-                    UNIVERSAL_ITEM_GENERATION_T1,
-                    UNIVERSAL_ITEM_GENERATION_T2,
-                    UNIVERSAL_ITEM_GENERATION_T3,
-                    UNIVERSAL_ITEM_GENERATION_T4);
+        event.getRegistry().registerAll(IRON_DOWNGRADE, COPPER_UPGRADE, GOLD_UPGRADE, DIAMOND_UPGRADE, NETHERITE_UPGRADE, MAX_STORAGE_UPGRADE, CREATIVE_VENDING_UPGRADE, VOID_UPGRADE, REDSTONE_UPGRADE, PULLING_UPGRADE, PUSHING_UPGRADE, COLLECTOR_UPGRADE, ORE_DICTIONARY_UPGRADE, WIRELESS_PULLING_UPGRADE, WIRELESS_PUSHING_UPGRADE, CONFIGURATION_TOOL, LINKING_TOOL, STONE_GENERATION_UPGRADE_T1, STONE_GENERATION_UPGRADE_T2, STONE_GENERATION_UPGRADE_T3, STONE_GENERATION_UPGRADE_T4, WATER_GENERATION_UPGRADE_T1, WATER_GENERATION_UPGRADE_T2, WATER_GENERATION_UPGRADE_T3, WATER_GENERATION_UPGRADE_T4);
+        if (Configurations.GENERATION.UNIVERSAL_ITEMS_GENERATION_REGISTERED) {
+            event.getRegistry().registerAll(UNIVERSAL_ITEM_GENERATION_T1, UNIVERSAL_ITEM_GENERATION_T2, UNIVERSAL_ITEM_GENERATION_T3, UNIVERSAL_ITEM_GENERATION_T4);
         }
     }
 

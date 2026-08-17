@@ -1,10 +1,16 @@
 package com.xinyihl.functionalstoragelegacy.common.block.base;
 
-import com.xinyihl.functionalstoragelegacy.api.Attachment;
-import com.xinyihl.functionalstoragelegacy.api.DrawerType;
-import com.xinyihl.functionalstoragelegacy.api.HitBoxLayout;
+import com.xinyihl.functionalstoragelegacy.api.storage.BigItemStack;
+import com.xinyihl.functionalstoragelegacy.api.storage.IBigItemHandler;
+import com.xinyihl.functionalstoragelegacy.api.storage.StorageAction;
+import com.xinyihl.functionalstoragelegacy.api.storage.TransferResult;
+import com.xinyihl.functionalstoragelegacy.common.block.DrawerAttachment;
+import com.xinyihl.functionalstoragelegacy.common.block.DrawerFaceLayout;
+import com.xinyihl.functionalstoragelegacy.common.inventory.CompactingInventoryHandler;
+import com.xinyihl.functionalstoragelegacy.common.storage.DrawerLayout;
 import com.xinyihl.functionalstoragelegacy.common.tile.base.ControllableDrawerTile;
 import com.xinyihl.functionalstoragelegacy.common.tile.controller.DrawerControllerTile;
+import com.xinyihl.functionalstoragelegacy.misc.Configurations;
 import com.xinyihl.functionalstoragelegacy.misc.RegistrationHandler;
 import com.xinyihl.functionalstoragelegacy.util.HitBoxesUtil;
 import net.minecraft.block.Block;
@@ -25,8 +31,11 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -41,16 +50,15 @@ import java.util.List;
  */
 public abstract class DrawerBlock extends Block {
 
-    public static final PropertyEnum<Attachment> ATTACHMENT = PropertyEnum.create("attachment", Attachment.class);
+    public static final PropertyEnum<DrawerAttachment> ATTACHMENT = PropertyEnum.create("attachment", DrawerAttachment.class);
     public static final PropertyDirection HORIZONTAL_FACING = PropertyDirection.create("horizontal_facing", EnumFacing.Plane.HORIZONTAL);
-    public static final EnumMap<HitBoxLayout, EnumMap<Attachment, EnumMap<EnumFacing, List<AxisAlignedBB>>>> CACHED_HIT_BOXES = new EnumMap<>(HitBoxLayout.class);
+    public static final EnumMap<DrawerFaceLayout, EnumMap<DrawerAttachment, EnumMap<EnumFacing, List<AxisAlignedBB>>>> CACHED_HIT_BOXES = new EnumMap<>(DrawerFaceLayout.class);
     public static final EnumFacing[] HORIZONTAL_VALUES = new EnumFacing[]{EnumFacing.NORTH, EnumFacing.EAST, EnumFacing.SOUTH, EnumFacing.WEST};
+    private static final long LARGE_DROP_WARNING_THRESHOLD = 6400L;
 
     public DrawerBlock(Material material) {
         super(material);
-        this.setDefaultState(this.blockState.getBaseState()
-                .withProperty(ATTACHMENT, Attachment.WALL)
-                .withProperty(HORIZONTAL_FACING, EnumFacing.NORTH));
+        this.setDefaultState(this.blockState.getBaseState().withProperty(ATTACHMENT, DrawerAttachment.WALL).withProperty(HORIZONTAL_FACING, EnumFacing.NORTH));
         this.setHardness(2.5F);
         this.setResistance(8.0F);
 
@@ -60,7 +68,7 @@ public abstract class DrawerBlock extends Block {
         this.setCreativeTab(RegistrationHandler.CREATIVE_TAB);
     }
 
-    public static Attachment getAttachment(IBlockState state) {
+    public static DrawerAttachment getAttachment(IBlockState state) {
         return state.getValue(ATTACHMENT);
     }
 
@@ -69,14 +77,77 @@ public abstract class DrawerBlock extends Block {
     }
 
     public static EnumFacing getFrontFacing(IBlockState state) {
-        Attachment attachment = DrawerBlock.getAttachment(state);
-        if (attachment == Attachment.FLOOR) {
+        DrawerAttachment attachment = DrawerBlock.getAttachment(state);
+        if (attachment == DrawerAttachment.FLOOR) {
             return EnumFacing.UP;
         }
-        if (attachment == Attachment.CEILING) {
+        if (attachment == DrawerAttachment.CEILING) {
             return EnumFacing.DOWN;
         }
         return DrawerBlock.getHorizontalFacing(state);
+    }
+
+    private static long getDroppedItemCount(ControllableDrawerTile tile) {
+        long total = countHandlerItems(tile.getItemHandler());
+        total = saturatedAdd(total, countUpgrades(tile.getStorageUpgrades()));
+        return saturatedAdd(total, countUpgrades(tile.getUtilityUpgrades()));
+    }
+
+    private static long countHandlerItems(@Nullable IBigItemHandler handler) {
+        if (handler == null) return 0L;
+        if (handler instanceof CompactingInventoryHandler) {
+            CompactingInventoryHandler compacting = (CompactingInventoryHandler) handler;
+            long remaining = compacting.getStoredBaseAmount();
+            long total = 0L;
+            for (CompactingInventoryHandler.Tier tier : compacting.getTiers()) {
+                if (!tier.hasTemplate()) continue;
+                long amount = remaining / tier.getBaseUnits();
+                total = saturatedAdd(total, amount);
+                remaining %= tier.getBaseUnits();
+            }
+            return total;
+        }
+        long total = 0L;
+        for (int slot = 0; slot < handler.getStorageCount(); slot++) {
+            total = saturatedAdd(total, handler.getSnapshot(slot).getAmount());
+        }
+        return total;
+    }
+
+    private static long countUpgrades(ItemStackHandler upgrades) {
+        long total = 0L;
+        for (int slot = 0; slot < upgrades.getSlots(); slot++) {
+            total = saturatedAdd(total, upgrades.getStackInSlot(slot).getCount());
+        }
+        return total;
+    }
+
+    private static long saturatedAdd(long left, long right) {
+        return left >= Long.MAX_VALUE - right ? Long.MAX_VALUE : left + right;
+    }
+
+    private static void dropUpgrades(World world, BlockPos pos, ItemStackHandler upgrades) {
+        for (int slot = 0; slot < upgrades.getSlots(); slot++) {
+            ItemStack stack = upgrades.getStackInSlot(slot);
+            if (!stack.isEmpty()) {
+                spawnAsEntity(world, pos, stack.copy());
+                upgrades.setStackInSlot(slot, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    private static void dropStoredItems(World world, BlockPos pos, @Nullable IBigItemHandler handler) {
+        if (handler == null) return;
+        for (int slot = 0; slot < handler.getStorageCount(); slot++) {
+            while (true) {
+                BigItemStack snapshot = handler.getSnapshot(slot);
+                if (snapshot.getAmount() <= 0L || !snapshot.hasTemplate()) break;
+                int amount = Math.max(1, snapshot.getTemplate().getMaxStackSize());
+                TransferResult<BigItemStack, ?> extracted = handler.extract(slot, amount, StorageAction.EXECUTE);
+                if (extracted.getProcessedAmount() <= 0L || extracted.getProcessed().isEmpty()) break;
+                spawnAsEntity(world, pos, extracted.getProcessed().toItemStack());
+            }
+        }
     }
 
     /**
@@ -124,23 +195,37 @@ public abstract class DrawerBlock extends Block {
     }
 
     @Override
+    public void harvestBlock(@Nonnull World worldIn, @Nonnull EntityPlayer player, @Nonnull BlockPos pos, @Nonnull IBlockState state, @Nullable TileEntity te, @Nonnull ItemStack stack) {
+        super.harvestBlock(worldIn, player, pos, state, te, stack);
+        worldIn.setBlockToAir(pos);
+    }
+
+    @Override
     public void getDrops(@Nonnull NonNullList<ItemStack> drops, IBlockAccess world, @Nonnull BlockPos pos, @Nonnull IBlockState state, int fortune) {
         TileEntity te = world.getTileEntity(pos);
         if (te instanceof ControllableDrawerTile) {
-            drops.add(createStackWithTileData((ControllableDrawerTile) te));
+            drops.add(Configurations.GENERAL.keepContentsOnBreak
+                    ? createStackWithTileData((ControllableDrawerTile) te)
+                    : new ItemStack(this));
         }
     }
 
     @Override
     public boolean removedByPlayer(@Nonnull IBlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull EntityPlayer player, boolean willHarvest) {
+        if (!world.isRemote && !Configurations.GENERAL.keepContentsOnBreak) {
+            TileEntity te = world.getTileEntity(pos);
+            if (te instanceof ControllableDrawerTile && getDroppedItemCount((ControllableDrawerTile) te) > LARGE_DROP_WARNING_THRESHOLD) {
+                ControllableDrawerTile drawer = (ControllableDrawerTile) te;
+                if (!drawer.consumeLargeDropBreakConfirmation()) {
+                    drawer.markLargeDropBreakConfirmed();
+                    player.sendMessage(new TextComponentTranslation("drawer.break.large_drop_warning")
+                            .setStyle(new net.minecraft.util.text.Style().setColor(TextFormatting.RED)));
+                    return false;
+                }
+            }
+        }
         if (willHarvest) return true; // Delay removal for getDrops
-        return super.removedByPlayer(state, world, pos, player, willHarvest);
-    }
-
-    @Override
-    public void harvestBlock(@Nonnull World worldIn, @Nonnull EntityPlayer player, @Nonnull BlockPos pos, @Nonnull IBlockState state, @Nullable TileEntity te, @Nonnull ItemStack stack) {
-        super.harvestBlock(worldIn, player, pos, state, te, stack);
-        worldIn.setBlockToAir(pos);
+        return super.removedByPlayer(state, world, pos, player, false);
     }
 
     @Override
@@ -148,6 +233,11 @@ public abstract class DrawerBlock extends Block {
         TileEntity te = worldIn.getTileEntity(pos);
         if (te instanceof ControllableDrawerTile) {
             ControllableDrawerTile drawerTile = (ControllableDrawerTile) te;
+            if (!worldIn.isRemote && !Configurations.GENERAL.keepContentsOnBreak) {
+                dropUpgrades(worldIn, pos, drawerTile.getStorageUpgrades());
+                dropUpgrades(worldIn, pos, drawerTile.getUtilityUpgrades());
+                dropStoredItems(worldIn, pos, drawerTile.getItemHandler());
+            }
             if (drawerTile.getControllerPos() != null) {
                 TileEntity controllerTE = worldIn.getTileEntity(drawerTile.getControllerPos());
                 if (controllerTE instanceof DrawerControllerTile) {
@@ -184,7 +274,15 @@ public abstract class DrawerBlock extends Block {
     }
 
     @Override
+    public int getStrongPower(IBlockState state, IBlockAccess worldIn, BlockPos pos, EnumFacing side) {
+        return (side == EnumFacing.UP) ? getWeakPower(state, worldIn, pos, side) : 0;
+    }
+
+    @Override
     public int getWeakPower(@Nonnull IBlockState state, IBlockAccess blockAccess, @Nonnull BlockPos pos, @Nonnull EnumFacing side) {
+        if (!canProvidePower(state)) {
+            return 0;
+        }
         TileEntity te = blockAccess.getTileEntity(pos);
         if (te instanceof ControllableDrawerTile) {
             return ((ControllableDrawerTile) te).getRedstoneSignal(side);
@@ -202,11 +300,9 @@ public abstract class DrawerBlock extends Block {
     @Override
     public IBlockState getStateFromMeta(int meta) {
         int safeMeta = Math.max(0, Math.min(meta, 11));
-        Attachment attachment = Attachment.byIndex(safeMeta / 4);
+        DrawerAttachment attachment = DrawerAttachment.byIndex(safeMeta / 4);
         EnumFacing horizontalFacing = HORIZONTAL_VALUES[safeMeta % 4];
-        return this.getDefaultState()
-                .withProperty(ATTACHMENT, attachment)
-                .withProperty(HORIZONTAL_FACING, horizontalFacing);
+        return this.getDefaultState().withProperty(ATTACHMENT, attachment).withProperty(HORIZONTAL_FACING, horizontalFacing);
     }
 
     @Override
@@ -218,11 +314,9 @@ public abstract class DrawerBlock extends Block {
     @Override
     public IBlockState getStateForPlacement(@Nonnull World world, @Nonnull BlockPos pos, @Nonnull EnumFacing facing, float hitX, float hitY, float hitZ, int meta, @Nonnull EntityLivingBase placer, @Nonnull EnumHand hand) {
         EnumFacing placementFacing = HitBoxesUtil.getPlacementFacingFromRay(placer);
-        Attachment attachment = HitBoxesUtil.getAttachmentForPlacement(placementFacing);
+        DrawerAttachment attachment = HitBoxesUtil.getAttachmentForPlacement(placementFacing);
         EnumFacing horizontalFacing = HitBoxesUtil.getHorizontalFacingForPlacement(attachment, placementFacing, placer);
-        return this.getDefaultState()
-                .withProperty(ATTACHMENT, attachment)
-                .withProperty(HORIZONTAL_FACING, horizontalFacing);
+        return this.getDefaultState().withProperty(ATTACHMENT, attachment).withProperty(HORIZONTAL_FACING, horizontalFacing);
     }
 
     @Override
@@ -288,15 +382,15 @@ public abstract class DrawerBlock extends Block {
     }
 
     public Collection<AxisAlignedBB> getHitBoxes(IBlockState state) {
-        HitBoxLayout layout = getHitBoxLayout();
+        DrawerFaceLayout layout = getFaceLayout();
         if (layout == null) {
             return Collections.emptyList();
         }
-        Attachment attachment = getAttachment(state);
+        DrawerAttachment attachment = getAttachment(state);
         EnumFacing horizontalFacing = getHorizontalFacing(state);
-        EnumMap<Attachment, EnumMap<EnumFacing, List<AxisAlignedBB>>> attachmentCache = CACHED_HIT_BOXES.get(layout);
+        EnumMap<DrawerAttachment, EnumMap<EnumFacing, List<AxisAlignedBB>>> attachmentCache = CACHED_HIT_BOXES.get(layout);
         if (attachmentCache == null) {
-            attachmentCache = new EnumMap<>(Attachment.class);
+            attachmentCache = new EnumMap<>(DrawerAttachment.class);
             CACHED_HIT_BOXES.put(layout, attachmentCache);
         }
         EnumMap<EnumFacing, List<AxisAlignedBB>> facingCache = attachmentCache.get(attachment);
@@ -313,11 +407,11 @@ public abstract class DrawerBlock extends Block {
     }
 
     @Nullable
-    protected HitBoxLayout getHitBoxLayout() {
+    protected DrawerFaceLayout getFaceLayout() {
         return null;
     }
 
-    public DrawerType getDrawerType() {
+    public DrawerLayout getDrawerLayout() {
         return null;
     }
 }

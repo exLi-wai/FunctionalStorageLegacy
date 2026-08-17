@@ -1,11 +1,11 @@
 package com.xinyihl.functionalstoragelegacy.common.inventory.capability;
 
+import com.xinyihl.functionalstoragelegacy.api.storage.IBigItemHandler;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.items.CapabilityItemHandler;
-import net.minecraftforge.items.IItemHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -13,17 +13,16 @@ import javax.annotation.Nullable;
 public class DrawerStackCapabilityProvider implements ICapabilityProvider {
 
     @Nullable
-    private final IItemHandler itemHandler;
+    private final IBigItemHandler itemHandler;
 
     @Nullable
     private final IFluidHandlerItem fluidHandlerItem;
 
-    public DrawerStackCapabilityProvider(@Nullable IItemHandler handler) {
+    public DrawerStackCapabilityProvider(@Nullable IBigItemHandler handler) {
         this(handler, null);
     }
 
-    public DrawerStackCapabilityProvider(@Nullable IItemHandler itemHandler,
-                                         @Nullable IFluidHandlerItem fluidHandlerItem) {
+    public DrawerStackCapabilityProvider(@Nullable IBigItemHandler itemHandler, @Nullable IFluidHandlerItem fluidHandlerItem) {
         this.itemHandler = itemHandler;
         this.fluidHandlerItem = fluidHandlerItem;
     }
@@ -33,8 +32,7 @@ public class DrawerStackCapabilityProvider implements ICapabilityProvider {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
             return itemHandler != null;
         }
-        if (capability == CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY
-                || capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
+        if (capability == CapabilityFluidHandler.FLUID_HANDLER_ITEM_CAPABILITY || capability == CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY) {
             return fluidHandlerItem != null;
         }
         return false;
